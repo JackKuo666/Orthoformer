@@ -1,0 +1,16 @@
+pandas
+datasets
+transformers
+torch>=2.6.0
+accelerate>=0.26.0
+pyarrow
+tqdm
+deepspeed
+numpy
+pytz
+scikit-learn
+tensorboard
+matplotlib
+seaborn
+safetensors
+umap-learn
