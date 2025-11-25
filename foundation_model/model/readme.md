@@ -83,16 +83,18 @@ After downloading the models, you can use `feature_extraction_example.py` to loa
 
 ```bash
 # Using model_3M_2048_v5 (standard positional encoding)
-python feature_extraction_example.py --model_dir model/model_3M_2048_v5 --use_alibi False
+# Note: --use_alibi flag is not needed, will auto-detect as False
+python feature_extraction_example.py --model_dir model/model_3M_2048_v5
 
 # Using model_3M_2048_v8 (ALiBi positional encoding)
-python feature_extraction_example.py --model_dir model/model_3M_2048_v8 --use_alibi True
+# Note: --use_alibi flag can be omitted (auto-detects v8), or explicitly set
+python feature_extraction_example.py --model_dir model/model_3M_2048_v8 --use_alibi
 
 # Using model_140k_2048_v18 (ALiBi positional encoding)
-python feature_extraction_example.py --model_dir model/model_140k_2048_v18 --use_alibi True
+python feature_extraction_example.py --model_dir model/model_140k_2048_v18 --use_alibi
 
 # Using model_3M_2048_v10 (ALiBi positional encoding)
-python feature_extraction_example.py --model_dir model/model_3M_2048_v10 --use_alibi True
+python feature_extraction_example.py --model_dir model/model_3M_2048_v10 --use_alibi
 ```
 
 ## Notes
