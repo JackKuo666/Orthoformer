@@ -38,7 +38,7 @@ Orthoformer/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/Orthoformer.git
+git clone https://github.com/JackKuo666/Orthoformer.git
 cd Orthoformer
 ```
 
@@ -85,6 +85,8 @@ The foundation model implementation and detailed documentation are located in th
 
 1. **model_3M_2048_v5**: Standard positional encoding
 2. **model_3M_2048_v8**: ALiBi positional encoding (recommended for long sequences)
+3. **model_140k_2048_v18**: ALiBi positional encoding
+4. **model_3M_2048_v10**: ALiBi positional encoding
 
 ## Downstream Tasks
 

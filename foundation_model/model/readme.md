@@ -20,6 +20,16 @@ All pre-trained models can be downloaded from Hugging Face:
    - use_alibi: True
    - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
 
+3. **model_140k_2048_v18**
+   - Positional Encoding: ALiBi (Attention with Linear Biases)
+   - use_alibi: True
+   - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
+
+4. **model_3M_2048_v10**
+   - Positional Encoding: ALiBi (Attention with Linear Biases)
+   - use_alibi: True
+   - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
+
 ## Download Methods
 
 ### Method 1: Using Hugging Face CLI
@@ -34,6 +44,8 @@ huggingface-cli download jackkuo/Orthoformer --local-dir ./model
 # Or download specific model
 huggingface-cli download jackkuo/Orthoformer/model_3M_2048_v5 --local-dir ./model/model_3M_2048_v5
 huggingface-cli download jackkuo/Orthoformer/model_3M_2048_v8 --local-dir ./model/model_3M_2048_v8
+huggingface-cli download jackkuo/Orthoformer/model_140k_2048_v18 --local-dir ./model/model_140k_2048_v18
+huggingface-cli download jackkuo/Orthoformer/model_3M_2048_v10 --local-dir ./model/model_3M_2048_v10
 ```
 
 ### Method 2: Using Python Code
@@ -75,6 +87,12 @@ python feature_extraction_example.py --model_dir model/model_3M_2048_v5 --use_al
 
 # Using model_3M_2048_v8 (ALiBi positional encoding)
 python feature_extraction_example.py --model_dir model/model_3M_2048_v8 --use_alibi True
+
+# Using model_140k_2048_v18 (ALiBi positional encoding)
+python feature_extraction_example.py --model_dir model/model_140k_2048_v18 --use_alibi True
+
+# Using model_3M_2048_v10 (ALiBi positional encoding)
+python feature_extraction_example.py --model_dir model/model_3M_2048_v10 --use_alibi True
 ```
 
 ## Notes
