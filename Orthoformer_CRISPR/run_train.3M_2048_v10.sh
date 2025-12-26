@@ -1,0 +1,11 @@
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 finetune_token_multiclass.py token_multiclass \
+    --train_dataset CRISPR_datasets/train.dataset \
+    --val_dataset CRISPR_datasets/val.dataset \
+    --test_dataset CRISPR_datasets/test.dataset \
+    --pretrained_dir ../../foundation_model/model/model_3M_2048_v10/final_model \
+    --output_dir output_3M_2048_v10 \
+    --num_labels 8 \
+    --max_length 2048 \
+    --compute_class_counts \
+    --epochs 30 \
+    --batch_size 2 > run_train.3M_2048_v10.sh.log && echo finished! > run_train.3M_2048_v10.sh.sign

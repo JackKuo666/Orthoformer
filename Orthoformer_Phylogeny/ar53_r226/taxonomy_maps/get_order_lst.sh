@@ -1,0 +1,9 @@
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Halobacteriales | cut -f 1 | sort -u > ../o__Halobacteriales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Methanobacteriales | cut -f 1 | sort -u > ../o__Methanobacteriales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Methanomicrobiales | cut -f 1 | sort -u > ../o__Methanomicrobiales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Thermococcales | cut -f 1 | sort -u > ../o__Thermococcales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Methanosarcinales | cut -f 1 | sort -u > ../o__Methanosarcinales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Sulfolobales | cut -f 1 | sort -u > ../o__Sulfolobales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Nitrososphaerales | cut -f 1 | sort -u > ../o__Nitrososphaerales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Methanococcales | cut -f 1 | sort -u > ../o__Methanococcales.accession_ids.txt
+grep -w -f ../metadata/sele_accession_ids.txt taxonomy_map.order.tsv | grep o__Thermoproteales | cut -f 1 | sort -u > ../o__Thermoproteales.accession_ids.txt

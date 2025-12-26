@@ -1,0 +1,13 @@
+python ../build_tree_from_embeddings.py \
+    --data_dir embeddings/ \
+    --out_prefix upgma_tree/ar53_r226 \
+    --method upgma_scipy \
+    --metric euclidean \
+    --save_csv \
+    --taxonomy_map taxonomy_maps/taxonomy_map.phylum.tsv \
+    --no_l2 \
+    --itol_labels upgma_tree/itol_labels.txt \
+    --ref_tree gtdb_ref_trees/ar53_r226.nwk \
+    --pruned_pred upgma_tree/ar53_r226.pruned_pred.nwk \
+    --pruned_ref upgma_tree/ar53_r226.pruned_ref.nwk \
+    --input_samples metadata/sele_accession_ids.txt && echo finished! > run.build_tree.upgma_sele.sh.sign
