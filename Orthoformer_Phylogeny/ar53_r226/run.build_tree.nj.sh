@@ -1,0 +1,13 @@
+python ../scripts/build_tree_from_embeddings.py \
+    --data_dir embeddings/ \
+    --out_prefix nj_tree/ar53_r226 \
+    --method nj_skbio \
+    --metric euclidean \
+    --save_csv \
+    --taxonomy_map taxonomy_maps/taxonomy_map.phylum.tsv \
+    --no_l2 \
+    --itol_labels nj_tree/itol_labels.txt \
+    --ref_tree gtdb_ref_trees/ar53_r226.nwk \
+    --pruned_pred nj_tree/ar53_r226.pruned_pred.nwk \
+    --pruned_ref nj_tree/ar53_r226.pruned_ref.nwk \
+    --input_samples metadata/sele_accession_ids.txt && echo finished! > run.build_tree.nj.sh.sign 
