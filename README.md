@@ -17,8 +17,12 @@ Orthoformer/
 │   ├── feature_extraction_example.py  # Feature extraction examples
 │   ├── model/                 # Pre-trained model directory
 │   └── datasets/              # Example datasets
-├── Orthoformer_Operon/        # Operon prediction downstream task (to be implemented)
-├── Orthoformer_Taxonomy/      # Taxonomy classification downstream task (to be implemented)
+├── Orthoformer_eval/          # Model Evaluation
+├── Orthoformer_Taxon/         # Taxon classification downstream task 
+├── Orthoformer_Phylogeny/     # phylogenetic analysis  
+├── Orthoformer_Phenotype/     # Phenotype prediction downstream task 
+├── Orthoformer_CRISPR/        # CRISPR-related token-level multiclass classification tasks
+├── Orthoformer_BGC/           # BGC abundance regression downstream task 
 ├── LICENSE                    # MIT License
 └── README.md                  # This file
 ```
@@ -52,7 +56,7 @@ pip install -r requirements.txt
 
 Pre-trained models are available on Hugging Face:
 
-**Model Repository**: https://huggingface.co/jackkuo/Orthoformer
+**Model Repository**: [https://huggingface.co/jackkuo/Orthoformer](https://huggingface.co/jackkuo/Orthoformer)
 
 For detailed download instructions, see [foundation_model/model/readme.md](foundation_model/model/readme.md)
 
@@ -61,6 +65,38 @@ Quick download:
 pip install huggingface-hub
 huggingface-cli download jackkuo/Orthoformer --local-dir ./foundation_model/model
 ```
+
+### Dataset Statistics
+
+| Split | Size | Max Sequence Length |
+|------|------|--------------------|
+| foundation_model_dataset | ~3M sequences | 2048 |
+| Downstream_Tasks_dataset | Task dependent | Task dependent |
+| Orthoformer_eval_dataset | Benchmarks | Task dependent |
+
+---
+
+#### Accessing the Dataset
+
+**Datasets Repository**: [https://huggingface.co/datasets/jackkuo/Orthoformer](https://huggingface.co/datasets/jackkuo/Orthoformer)
+
+You can download the dataset via Hugging Face using **Git + Xet (recommended for large files)**:
+
+```bash
+# Install git-xet (Linux)
+curl -sSf https://raw.githubusercontent.com/huggingface/xet-core/main/git_xet/install.sh | sh
+git xet install
+
+# Clone the dataset
+git clone https://huggingface.co/datasets/jackkuo/Orthoformer
+````
+
+If you only want the metadata without large files:
+
+```bash
+GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/datasets/jackkuo/Orthoformer
+```
+
 
 ### Basic Usage
 
@@ -83,10 +119,29 @@ The foundation model implementation and detailed documentation are located in th
 
 ### Available Models
 
-1. **model_3M_2048_v5**: Standard positional encoding
-2. **model_3M_2048_v8**: ALiBi positional encoding (recommended for long sequences)
-3. **model_140k_2048_v18**: ALiBi positional encoding
-4. **model_3M_2048_v10**: ALiBi positional encoding
+#### Foundation Models
+
+| Model | Training Genomes | Max Length | Hidden | Layers | Heads | Description |
+|------|-----------------|-----------|--------|--------|-------|-------------|
+| `model_3M_2048_v8` | 3M | 2048 | 512 | 6 | 8 | Base Orthoformer foundation model |
+| `model_3M_2048_v10` | 3M | 2048 | 1024 | 12 | 16 | Large Orthoformer foundation model |
+| `model_140k_2048_v18` | 140k | 2048 | 512 | 6 | 8 | Compact foundation model |
+
+All foundation models use:
+
+- **ALiBi positional encoding**: enables long-context modeling across variable-length microbial genomes, preserving functional relationships between orthologous groups.
+- **Span-masked language modeling (span-MLM, span=3)**: 15% of OG tokens are masked or corrupted following a BERT-style scheme, allowing the model to learn co-occurrence patterns, functional modules, and evolutionary dependencies in a self-supervised manner.
+
+---
+
+#### Task-Specific Models
+
+| Model | Task | Initialized From |
+|------|------|------------------|
+| `Orthoformer_CRISPR_model` | CRISPR-associated genome prediction | `model_3M_2048_v10` |
+| `BGC_abundance_regression_model` | Biosynthetic gene cluster abundance | `model_3M_2048_v10` |
+
+These models adapt the foundation embeddings to **organism-level functional phenotypes**.
 
 ## Downstream Tasks
 
