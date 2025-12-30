@@ -80,7 +80,7 @@ bash run.embedding_generate.sh
 
 **Script details:**
 ```bash
-python ../scripts/generate_embeddings_cli.py \
+python ../generate_embeddings_cli.py \
     --model_dir ../../foundation_model/model/model_3M_2048_v10 \
     --dataset_path datasets/ar53.dataset \
     --output_dir embeddings \

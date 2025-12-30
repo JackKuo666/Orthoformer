@@ -1,4 +1,4 @@
-python ../scripts/build_tree_from_embeddings.py \
+python ../build_tree_from_embeddings.py \
     --data_dir embeddings/ \
     --out_prefix nj_tree/ar53_r226 \
     --method nj_skbio \
