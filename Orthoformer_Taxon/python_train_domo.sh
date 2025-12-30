@@ -1,0 +1,7 @@
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v7_2048"
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v14_2048"
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v15_2048"
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v16_2048"
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v17_2048"
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v18_2048"
+python train_domo.py --train_file "train_aug2_genus_s2000_taxid_v20_2048"
