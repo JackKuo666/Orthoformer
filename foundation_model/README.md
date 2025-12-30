@@ -18,7 +18,7 @@ foundation_model/
 ├── orthoformer_model.py               # Orthoformer model implementation (supports ALiBi and RoPE)
 ├── model/                             # Pre-trained models directory
 │   ├── readme.md                      # Model download instructions
-│   ├── model_3M_2048_v5/             # Model version v5 (standard positional encoding)
+│   ├── model_3M_2048_v10/             # Model version v10 (ALiBi positional encoding)
 │   │   ├── config.json                # Model configuration file
 │   │   ├── model_config.json          # Custom model configuration
 │   │   ├── model.safetensors          # Model weights
@@ -89,11 +89,8 @@ Run the feature extraction example code:
 # Using default model (model_3M_2048_v8, ALiBi=True)
 python feature_extraction_example.py
 
-# Using model_3M_2048_v5 (standard positional encoding)
-python feature_extraction_example.py --model_dir model/model_3M_2048_v5
-
-# Using model_3M_2048_v8 (ALiBi positional encoding)
-python feature_extraction_example.py --model_dir model/model_3M_2048_v8 --use_alibi
+# Using model_3M_2048_v10 (ALiBi positional encoding)
+python feature_extraction_example.py --model_dir model/model_3M_2048_v10 --use_alibi
 ```
 
 The script will:
@@ -116,10 +113,6 @@ Automatically detects and uses GPU or CPU.
 
 #### Model Loading
 ```python
-# Standard positional encoding model (model_3M_2048_v5)
-model_dir = "model/model_3M_2048_v5"
-tokenizer = BertTokenizer.from_pretrained(model_dir)
-model = BertModel.from_pretrained(model_dir)
 
 # ALiBi positional encoding model (model_3M_2048_v8)
 model_dir = "model/model_3M_2048_v8"
@@ -175,12 +168,7 @@ Uses trained attention vectors to perform weighted summation of tokens, resultin
 
 ### Available Models
 
-1. **model_3M_2048_v5**
-   - Positional Encoding: Standard Position Embeddings
-   - use_alibi: False
-   - Features: Uses traditional learnable position embeddings
-
-2. **model_3M_2048_v8**
+1. **model_3M_2048_v8**
    - Positional Encoding: ALiBi (Attention with Linear Biases)
    - use_alibi: True
    - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
@@ -217,10 +205,13 @@ Feature extraction results include:
 
 ## Model Records
 
-### model_3M_2048_v5
-- **Positional Encoding**: Standard position embeddings (use_alibi=False)
-- **Status**: Training completed
+| Model | Training Genomes | Max Length | Hidden | Layers | Heads | Description |
+|------|-----------------|-----------|--------|--------|-------|-------------|
+| `model_3M_2048_v8` | 3M | 2048 | 512 | 6 | 8 | Base Orthoformer foundation model |
+| `model_3M_2048_v10` | 3M | 2048 | 1024 | 12 | 16 | Large Orthoformer foundation model |
+| `model_140k_2048_v18` | 140k | 2048 | 512 | 6 | 8 | Compact foundation model |
 
-### model_3M_2048_v8
-- **Positional Encoding**: ALiBi (use_alibi=True)
-- **Status**: Training completed
+All foundation models use:
+
+- **ALiBi positional encoding**: enables long-context modeling across variable-length microbial genomes, preserving functional relationships between orthologous groups.
+- **Span-masked language modeling (span-MLM, span=3)**: 15% of OG tokens are masked or corrupted following a BERT-style scheme, allowing the model to learn co-occurrence patterns, functional modules, and evolutionary dependencies in a self-supervised manner.
