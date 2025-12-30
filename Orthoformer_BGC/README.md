@@ -38,7 +38,7 @@ Orthoformer_BGC/
 │   └── README.md              # Detailed usage instructions
 │
 ├── 4.XGBoost_binary_classifiers/   # Machine learning classifier
-│   └── xgboost_binary_antismash_analysis_optimized.py  # XGBoost classifier
+│   └── xgboost_binary_classifiers.py  # XGBoost classifier
 │
 └── examples/                       # Example data for reproduction
     └── classification_data/
@@ -124,13 +124,67 @@ python 1.BGC_regression_targets/6.2.run_eggnog.py \
     --data_dir /path/to/eggnog_db \
     --cpu 8
 
-# Convert eggNOG to CSV
-python 2.BGC_regression_dataset/7.eggnog2csv.py \
-    -i input.emapper.annotations \
-    -o output.csv
 ```
 
-### 3. Model Training
+### 3. Dataset Preparation
+
+```bash
+# Convert eggNOG annotations to sample-COG count matrix
+python 2.BGC_regression_dataset/7.eggnog2csv.py \
+    -i input.emapper.annotations \
+    -o output.csv \
+    -s '|' \
+    -dx 0 \
+    -c 100000
+
+# Parameters:
+#   -i: Input eggNOG annotation file (.emapper.annotations)
+#   -o: Output CSV file
+#   -s: Separator in gene name field (default: '|')
+#   -dx: Sample ID index after splitting gene name (default: 0)
+#   -c: Chunk size for reading large files (default: 100000)
+```
+
+```bash
+# Tokenize COG matrix for BERT input
+python 2.BGC_regression_dataset/8.tokenizer.py \
+    --input_file cog_matrix.csv \
+    --token_dictionary_file token_dict.pkl \
+    --output_dir tokenized_output \
+    --output_prefix my_dataset \
+    --model_input_size 4096 \
+    --special_token
+
+# Parameters:
+#   --input_file: Input CSV file (samples × COGs matrix)
+#   --token_dictionary_file: Token dictionary file (.pkl or .csv)
+#   --output_dir: Output directory for tokenized dataset
+#   --output_prefix: Prefix for output dataset name
+#   --model_input_size: Maximum sequence length (default: 4096)
+#   --special_token: Add <cls> and <eos> tokens
+#   --label_file: Optional label file for supervised learning
+#   --chunk_size: Chunk size for processing (default: 100000)
+```
+
+```bash
+# Add regression targets to tokenized dataset
+python 2.BGC_regression_dataset/9.add_targets.py \
+    --dataset tokenized_output/my_dataset.dataset \
+    --targets_csv bgc_targets.csv \
+    --output final_dataset
+
+# Parameters:
+#   --dataset: Path to tokenized HuggingFace dataset
+#   --targets_csv: CSV file with Sample_ID column and target columns
+#   --output: Output directory for final dataset with targets
+
+# Note: targets_csv format:
+# Sample_ID,target1,target2,...
+# sample1,0.5,1.2,...
+# sample2,0.8,0.9,...
+```
+
+### 4. Model Training
 
 #### BERT Multi-Value Regression
 ```bash
@@ -145,14 +199,7 @@ python 3.BGC_abundance_regression/train_multivalue_regression.py \
     --epochs 30
 ```
 
-#### XGBoost Binary Classification
-```bash
-python 4.XGBoost_binary_classifiers/xgboost_binary_antismash_analysis_optimized.py \
-    input_data.csv \
-    output_prefix
-```
-
-### 4. Model Evaluation
+### 5. Model Evaluation
 
 ```bash
 python 3.BGC_abundance_regression/evaluate_multivalue_regression.py \
@@ -161,6 +208,13 @@ python 3.BGC_abundance_regression/evaluate_multivalue_regression.py \
     --test_dataset ./data/test \
     --output_dir ./results \
     --save_predictions
+```
+
+### 6. XGBoost Binary Classification
+```bash
+python 4.XGBoost_binary_classifiers/xgboost_binary_classifiers.py \
+    input_data.csv \
+    output_prefix
 ```
 
 ## Model Architecture
