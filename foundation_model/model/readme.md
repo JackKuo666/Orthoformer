@@ -10,25 +10,16 @@ All pre-trained models can be downloaded from Hugging Face:
 
 ### Available Models
 
-1. **model_3M_2048_v5**
-   - Positional Encoding: Standard Position Embeddings
-   - use_alibi: False
-   - Features: Uses traditional learnable position embeddings
+| Model | Training Genomes | Max Length | Hidden | Layers | Heads | Description |
+|------|-----------------|-----------|--------|--------|-------|-------------|
+| `model_3M_2048_v8` | 3M | 2048 | 512 | 6 | 8 | Base Orthoformer foundation model |
+| `model_3M_2048_v10` | 3M | 2048 | 1024 | 12 | 16 | Large Orthoformer foundation model |
+| `model_140k_2048_v18` | 140k | 2048 | 512 | 6 | 8 | Compact foundation model |
 
-2. **model_3M_2048_v8**
-   - Positional Encoding: ALiBi (Attention with Linear Biases)
-   - use_alibi: True
-   - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
+All foundation models use:
 
-3. **model_140k_2048_v18**
-   - Positional Encoding: ALiBi (Attention with Linear Biases)
-   - use_alibi: True
-   - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
-
-4. **model_3M_2048_v10**
-   - Positional Encoding: ALiBi (Attention with Linear Biases)
-   - use_alibi: True
-   - Features: Uses ALiBi positional encoding, better handling of long sequences, no position embedding parameters required
+- **ALiBi positional encoding**: enables long-context modeling across variable-length microbial genomes, preserving functional relationships between orthologous groups.
+- **Span-masked language modeling (span-MLM, span=3)**: 15% of OG tokens are masked or corrupted following a BERT-style scheme, allowing the model to learn co-occurrence patterns, functional modules, and evolutionary dependencies in a self-supervised manner.
 
 ## Download Methods
 
@@ -42,7 +33,6 @@ pip install huggingface-hub
 huggingface-cli download jackkuo/Orthoformer --local-dir ./model
 
 # Or download specific model
-huggingface-cli download jackkuo/Orthoformer/model_3M_2048_v5 --local-dir ./model/model_3M_2048_v5
 huggingface-cli download jackkuo/Orthoformer/model_3M_2048_v8 --local-dir ./model/model_3M_2048_v8
 huggingface-cli download jackkuo/Orthoformer/model_140k_2048_v18 --local-dir ./model/model_140k_2048_v18
 huggingface-cli download jackkuo/Orthoformer/model_3M_2048_v10 --local-dir ./model/model_3M_2048_v10
@@ -63,7 +53,7 @@ snapshot_download(
 # Or download specific model
 snapshot_download(
     repo_id="jackkuo/Orthoformer",
-    allow_patterns="model_3M_2048_v5/*",
+    allow_patterns="model_3M_2048_v8/*",
     local_dir="./model",
     local_dir_use_symlinks=False
 )
@@ -82,10 +72,6 @@ git clone https://huggingface.co/jackkuo/Orthoformer ./model
 After downloading the models, you can use `feature_extraction_example.py` to load and use the models:
 
 ```bash
-# Using model_3M_2048_v5 (standard positional encoding)
-# Note: --use_alibi flag is not needed, will auto-detect as False
-python feature_extraction_example.py --model_dir model/model_3M_2048_v5
-
 # Using model_3M_2048_v8 (ALiBi positional encoding)
 # Note: --use_alibi flag can be omitted (auto-detects v8), or explicitly set
 python feature_extraction_example.py --model_dir model/model_3M_2048_v8 --use_alibi
