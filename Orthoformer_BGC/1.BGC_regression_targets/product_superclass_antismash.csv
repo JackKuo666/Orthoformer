@@ -1,0 +1,118 @@
+product,superclass
+fatty_acid,other
+pufa,other
+nrps,nrps
+nrps-like,nrps
+nrp-metallophore,nrps related peptides
+thioamide-nrp,nrps related peptides
+isocyanide-nrp,nrps related peptides
+blactam,nrps related peptides
+cdps,other
+fungal_cdps,other
+ni-siderophore,nrps related peptides
+leupeptin,nrps related peptides
+naggn,other
+acyl_amino_acids,other
+aminocoumarin,other
+aminopolycarboxylic-acid,other
+arylpolyene,other
+azoxy-crosslink,other
+azoxy-dimer,other
+benzoxazole,other
+betalactone,other
+butyrolactone,other
+crocagin,other
+cyclic-lactone-autoinducer,other
+cytokinin,other
+deazapurine,other
+ectoine,other
+furan,other
+guanidinotides,other
+halogenated,other
+hserlactone,other
+hydrogen-cyanide,other
+hydroxytropolone,other
+indole,other
+isocyanide,other
+ladderane,other
+lysine,other
+melanin,other
+mycosporine,other
+napaa,other
+nitropropanoic-acid,other
+opine-like-metallophore,other
+other,other
+phenazine,other
+phosphoglycolipid,other
+phosphonate,other
+phosphonate-like,other
+polyhalogenated-pyrrole,other
+polyyne,other
+prodigiosin,other
+pyrrolidine,other
+quinone_isoprenoid_chain,other
+redox-cofactor,other
+tropodithietic-acid,other
+pbde,other
+resorcinol,other
+t1pks,pks
+t2pks,pks
+t3pks,pks
+transat-pks,pks
+hr-t2pks,pks
+hgle-ks,pks
+ppys-ks,pks
+pks-like,pks
+transat-pks-like,pks
+lanthipeptide-class-i,ripps
+lanthipeptide-class-ii,ripps
+lanthipeptide-class-iii,ripps
+lanthipeptide-class-iv,ripps
+lanthipeptide-class-v,ripps
+lassopeptide,ripps
+cyanobactin,ripps
+microviridin,ripps
+glycocin,ripps
+proteusin,ripps
+sactipeptide,ripps
+fungal-ripp,ripps
+archaeal-ripp,ripps
+rre-containing,ripps
+ripp-like,ripps
+fungal-ripp-like,ripps
+atropopeptide,ripps
+azole-containing-ripp,ripps
+bottromycin,ripps
+darobactin,ripps
+epipeptide,ripps
+linaridin,ripps
+lipolanthine,ripps
+methanobactin,ripps
+ranthipeptide,ripps
+ras-ripp,ripps
+rcdps,ripps
+spliceotide,ripps
+thioamitides,ripps
+triceptide,ripps
+2dos,saccharides & derivatives
+amglyccycl,saccharides & derivatives
+lincosamides,saccharides & derivatives
+oligosaccharide,saccharides & derivatives
+saccharide,saccharides & derivatives
+nucleoside,saccharides & derivatives
+terpene,terpenes
+terpene-precursor,terpenes
+thiopeptide,ripps
+lap,ripps
+siderophore,nrps related peptides
+mycosporine-like,other
+bacteriocin,ripps
+fused,other
+head_to_tail,ripps
+lanthidin,ripps
+TfuA-related,ripps
+otherks,pks
+microcin,ripps
+cf_saccharide,saccharides & derivatives
+cf_fatty_acid,other
+cf_putative,other
