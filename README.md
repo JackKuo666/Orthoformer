@@ -147,11 +147,20 @@ These models adapt the foundation embeddings to **organism-level functional phen
 
 This repository includes the following downstream task implementations:
 
-### Orthoformer_Operon
-Operon prediction task using the Orthoformer foundation model. *(Implementation in progress)*
+### Orthoformer_Phenotype
+Phenotype prediction task using the Orthoformer foundation model.
 
-### Orthoformer_Taxonomy
-Taxonomy classification task using the Orthoformer foundation model. *(Implementation in progress)*
+### Orthoformer_Taxon
+Taxon classification task using the Orthoformer foundation model.
+
+### Orthoformer_Phylogeny
+phylogenetic analysis task using the Orthoformer foundation model.
+
+### Orthoformer_CRISPR
+CRISPR-related token-level multiclass classification tasks using the Orthoformer foundation model.
+
+### Orthoformer_BGC
+BGC abundance regression downstream task  using the Orthoformer foundation model.
 
 ## Requirements
 
