@@ -1,6 +1,6 @@
 # Orthoformer-BGC: Biosynthetic Gene Cluster Abundance Prediction
 
-A computational pipeline for predicting biosynthetic gene cluster (BGC) abundance from microbial genomic data using deep learning (BERT-based) and machine learning (XGBoost) approaches.
+A computational pipeline for predicting biosynthetic gene cluster (BGC) abundance from microbial genomic data using regression models (BERT-based) and machine learning (XGBoost) approaches.
 
 ## Overview
 
