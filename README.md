@@ -47,12 +47,44 @@ cd Orthoformer
 ```
 
 2. Install dependencies:
+   
+for foundation_model:  
 ```bash
 cd foundation_model
 pip install -r requirements.txt
 ```
+for downstream tasks:
+```bash
+# cd [downstream tasks folder, eg: Orthoformer_CRISPR]
+cd Orthoformer_CRISPR
+pip install -r requirements.txt
+```
 
 ### Model Download
+
+#### Foundation Models
+
+| Model | Training Genomes | Max Length | Hidden | Layers | Heads | Description |
+|------|-----------------|-----------|--------|--------|-------|-------------|
+| `model_3M_2048_v8` | 3M | 2048 | 512 | 6 | 8 | Base Orthoformer foundation model |
+| `model_3M_2048_v10` | 3M | 2048 | 1024 | 12 | 16 | Large Orthoformer foundation model |
+| `model_140k_2048_v18` | 140k | 2048 | 512 | 6 | 8 | Compact foundation model |
+
+All foundation models use:
+
+- **ALiBi positional encoding**: enables long-context modeling across variable-length microbial genomes, preserving functional relationships between orthologous groups.
+- **Span-masked language modeling (span-MLM, span=3)**: 15% of OG tokens are masked or corrupted following a BERT-style scheme, allowing the model to learn co-occurrence patterns, functional modules, and evolutionary dependencies in a self-supervised manner.
+
+#### Task-Specific Models
+
+| Model | Task | Initialized From |
+|------|------|------------------|
+| `Orthoformer_CRISPR_model` | CRISPR-associated genome prediction | `model_3M_2048_v10` |
+| `BGC_abundance_regression_model` | Biosynthetic gene cluster abundance | `model_3M_2048_v10` |
+
+These models adapt the foundation embeddings to **organism-level functional phenotypes**.
+
+#### Accessing the Model
 
 Pre-trained models are available on Hugging Face:
 
@@ -66,15 +98,16 @@ pip install huggingface-hub
 huggingface-cli download jackkuo/Orthoformer --local-dir ./foundation_model/model
 ```
 
-### Dataset Statistics
+
+### Dataset Download
+
+#### Dataset Statistics
 
 | Split | Size | Max Sequence Length |
 |------|------|--------------------|
 | foundation_model_dataset | ~3M sequences | 2048 |
 | Downstream_Tasks_dataset | Task dependent | Task dependent |
 | Orthoformer_eval_dataset | Benchmarks | Task dependent |
-
----
 
 #### Accessing the Dataset
 
@@ -91,24 +124,9 @@ git xet install
 git clone https://huggingface.co/datasets/jackkuo/Orthoformer
 ````
 
-If you only want the metadata without large files:
-
-```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/datasets/jackkuo/Orthoformer
-```
-
-
 ### Basic Usage
 
-See the [foundation_model/README.md](foundation_model/README.md) for detailed usage examples and API documentation.
-
-Quick example:
-```bash
-cd foundation_model
-python feature_extraction_example.py
-```
-
-## Foundation Model
+#### Foundation Model
 
 The foundation model implementation and detailed documentation are located in the `foundation_model/` directory. Please refer to [foundation_model/README.md](foundation_model/README.md) for:
 
@@ -117,49 +135,32 @@ The foundation model implementation and detailed documentation are located in th
 - Training and inference examples
 - Model specifications
 
-### Available Models
+See the [foundation_model/README.md](foundation_model/README.md) for detailed usage examples.
 
-#### Foundation Models
+Quick example:
+```bash
+cd foundation_model
+python feature_extraction_example.py
+```
 
-| Model | Training Genomes | Max Length | Hidden | Layers | Heads | Description |
-|------|-----------------|-----------|--------|--------|-------|-------------|
-| `model_3M_2048_v8` | 3M | 2048 | 512 | 6 | 8 | Base Orthoformer foundation model |
-| `model_3M_2048_v10` | 3M | 2048 | 1024 | 12 | 16 | Large Orthoformer foundation model |
-| `model_140k_2048_v18` | 140k | 2048 | 512 | 6 | 8 | Compact foundation model |
 
-All foundation models use:
-
-- **ALiBi positional encoding**: enables long-context modeling across variable-length microbial genomes, preserving functional relationships between orthologous groups.
-- **Span-masked language modeling (span-MLM, span=3)**: 15% of OG tokens are masked or corrupted following a BERT-style scheme, allowing the model to learn co-occurrence patterns, functional modules, and evolutionary dependencies in a self-supervised manner.
-
----
-
-#### Task-Specific Models
-
-| Model | Task | Initialized From |
-|------|------|------------------|
-| `Orthoformer_CRISPR_model` | CRISPR-associated genome prediction | `model_3M_2048_v10` |
-| `BGC_abundance_regression_model` | Biosynthetic gene cluster abundance | `model_3M_2048_v10` |
-
-These models adapt the foundation embeddings to **organism-level functional phenotypes**.
-
-## Downstream Tasks
+#### Downstream Tasks
 
 This repository includes the following downstream task implementations:
 
-### [Orthoformer_Phenotype](Orthoformer_Phenotype)
+##### [Orthoformer_Phenotype](Orthoformer_Phenotype)
 Phenotype prediction task using the Orthoformer foundation model.
 
-### [Orthoformer_Taxon](Orthoformer_Taxon)
+##### [Orthoformer_Taxon](Orthoformer_Taxon)
 Taxon classification task using the Orthoformer foundation model.
 
-### [Orthoformer_Phylogeny](Orthoformer_Phylogeny)
+##### [Orthoformer_Phylogeny](Orthoformer_Phylogeny)
 phylogenetic analysis task using the Orthoformer foundation model.
 
-### [Orthoformer_CRISPR](Orthoformer_CRISPR)
+##### [Orthoformer_CRISPR](Orthoformer_CRISPR)
 CRISPR-related token-level multiclass classification tasks using the Orthoformer foundation model.
 
-### [Orthoformer_BGC](Orthoformer_BGC)
+##### [Orthoformer_BGC](Orthoformer_BGC)
 BGC abundance regression downstream task  using the Orthoformer foundation model.
 
 For detailed usage of models and datasets in downstream tasks, please refer to the description of the Methods in the manuscript.
