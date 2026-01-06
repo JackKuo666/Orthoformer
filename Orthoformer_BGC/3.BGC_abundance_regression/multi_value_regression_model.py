@@ -3,6 +3,12 @@
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, Tuple
+import sys
+from pathlib import Path
+
+# Add project root directory to Python path so foundation_model can be imported as a module
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 import numpy as np
 import torch
@@ -10,7 +16,7 @@ import torch.nn as nn
 from datasets import Dataset
 from transformers import BertConfig, BertForMaskedLM
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from orthoformer_model import OrthoformerSelfAttention
+from foundation_model.orthoformer_model import OrthoformerSelfAttention
 
 # ======================
 # Config
