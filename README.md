@@ -162,6 +162,8 @@ CRISPR-related token-level multiclass classification tasks using the Orthoformer
 ### Orthoformer_BGC
 BGC abundance regression downstream task  using the Orthoformer foundation model.
 
+For detailed usage of models and datasets in downstream tasks, please refer to the description of the Methods in the manuscript.
+
 ## Requirements
 
 - Python 3.12+
