@@ -20,16 +20,16 @@ import torch.nn.functional as F
 def collate_fn_test(batch):
     """
     batch: list of (X, y, length, og_seq) from TestSeqDataset.__getitem__
-    目标：
-      - X, y, length 正常 stack 成张量
-      - og_seq 保持「每个样本一个序列」的 list，不做 zip 转置
+    Goals:
+      - X, y, length normally stack into tensors
+      - og_seq keeps a list of "one sequence per sample", no zip transpose
     """
-    Xs, ys, lens, ogs,names = zip(*batch)  # 长度 = batch_size
+    Xs, ys, lens, ogs,names = zip(*batch)  # length = batch_size
 
     Xs = torch.stack(Xs, dim=0)             # [B, MAX_LEN, D]
     ys = torch.stack(ys, dim=0)             # [B]
     lens = torch.stack(lens, dim=0)         # [B]
-    ogs = list(ogs)                         # [B]，每个元素就是一条 OG 序列(list 或 tuple)
+    ogs = list(ogs)                         # [B], each element is one OG sequence (list or tuple)
     names = list(names)
     return Xs, ys, lens, ogs , names
 
@@ -67,21 +67,21 @@ class FocalLoss(nn.Module):
         else:
             return loss
 
-# ==================== 全局参数 ====================
+# ==================== Global Parameters ====================
 
 D = 1024
 MAX_LEN = 2048
 
-# ==================== Padding 函数 ====================
+# ==================== Padding Function ====================
 
 def padding_to_maxlen(sequences, labels, MAX_LEN=2048):
     """
-    sequences: list of np.array, 每个 shape = (length_i, D)
+    sequences: list of np.array, each shape = (length_i, D)
     labels: list or array, len = N
-    返回:
+    Returns:
        X_padded: [N, MAX_LEN, D]
        y:        [N]
-       lengths:  [N] 有效长度
+       lengths:  [N] valid lengths
     """
     N = len(sequences)
     X_padded = np.zeros((N, MAX_LEN, D), dtype=np.float32)
@@ -95,7 +95,7 @@ def padding_to_maxlen(sequences, labels, MAX_LEN=2048):
             X_padded[i] = seq[:MAX_LEN, :] ###
         else:
             X_padded[i, :L, :] = seq
-    # 不要改 label
+    # Don't modify label
     #labels[-1] = 1 ### for test
     y = np.asarray(labels).astype(np.int64)
     return X_padded, y, lengths
@@ -127,7 +127,7 @@ class TestSeqDataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx], self.lengths[idx], self.og_seqs[idx] , self.sample_names[idx]
 
-# ==================== 1D CNN 模型 ====================
+# ==================== 1D CNN Model ====================
 
 class CNN1DClassifier(nn.Module):
     def __init__(self, in_dim=1024, num_classes=1):
@@ -158,7 +158,7 @@ class CNN1DClassifier(nn.Module):
         logits = self.fc(x).squeeze(-1)  # [B]
         return logits                  # BCEWithLogits / FocalLoss
 
-# ==================== CSV 载入标签 ====================
+# ==================== CSV Load Labels ====================
 
 def load_and_preprocess_data(csv_path):
     df = pd.read_csv(csv_path)
@@ -166,15 +166,15 @@ def load_and_preprocess_data(csv_path):
     label_counts = df['Label'].value_counts().to_dict()
     positive_ratio = float(df['Label'].mean())
 
-    print("数据基本信息:")
-    print(f"  总样本数: {total_samples}")
-    print(f"  类别分布: {label_counts}")
-    print(f"  阳性比例: {positive_ratio:.3f}")
+    print("Basic data information:")
+    print(f"  Total samples: {total_samples}")
+    print(f"  Class distribution: {label_counts}")
+    print(f"  Positive ratio: {positive_ratio:.3f}")
 
     label_dict = df.set_index('genome_name')['Label'].to_dict()
     return label_dict
 
-# ==================== 读 .pt 的类 ====================
+# ==================== Class for Reading .pt Files ====================
 
 class COGAnalyzer:
     def __init__(self, folder_path):
@@ -186,7 +186,7 @@ class COGAnalyzer:
 
     def load_pt_files_with_samples(self, samples_list):
         pt_files = list(self.folder_path.glob("*.pt"))
-        print(f"找到 {len(pt_files)} 个pt文件")
+        print(f"Found {len(pt_files)} pt files")
         filter_pt_files = [filename for filename in pt_files if filename.stem in samples_list.keys()]
 
         sample_count = 0
@@ -204,13 +204,13 @@ class COGAnalyzer:
                 self.sample_names.append(sample_name)
                 self.labels.append(samples_list[sample_name])
                 sample_count += 1
-                #print(f"成功加载: {sample_name}, 包含 {len(og_seq)} 个COG")
+                #print(f"Successfully loaded: {sample_name}, contains {len(og_seq)} COGs")
             except Exception as e:
-                print(f"加载文件 {pt_file} 时出错: {e}")
+                print(f"Error loading file {pt_file}: {e}")
             #if sample_count >= 40:
             #    break
 
-# ==================== Saliency 计算（带 OG 映射） ====================
+# ==================== Saliency Computation (with OG Mapping) ====================
 
 def compute_saliency_and_map_to_sequences(model, dataloader, device, max_batches=None):
     model.eval()
@@ -250,7 +250,7 @@ def compute_saliency_and_map_to_sequences(model, dataloader, device, max_batches
                 og_seq_i = list(og_seq_i)
 
             if len(og_seq_i) != L_i:
-                print(f"[WARN] len(og_seq)={len(og_seq_i)} != L_i={L_i}, 将按最小长度裁剪")
+                print(f"[WARN] len(og_seq)={len(og_seq_i)} != L_i={L_i}, will crop to minimum length")
                 L_eff = min(len(og_seq_i), L_i)
                 og_seq_i = og_seq_i[:L_eff]
                 sal_map_i = sal_map_i[:L_eff]
@@ -265,32 +265,32 @@ def compute_saliency_and_map_to_sequences(model, dataloader, device, max_batches
 
     return all_saliency_trimmed, all_lengths, all_original_sequences, all_sample_names
 
-# ==================== 从 saliency 中找每个 sample 的 top OG ====================
+# ==================== Find Top OG for Each Sample from Saliency ====================
 def get_important_OG(saliency_list, original_seq_list, sample_name_list, top_k=10):
     """
-    根据每个样本的 saliency，找到前 top_k 个贡献最大的 OG。
+    Find top_k most contributing OGs based on each sample's saliency.
 
-    参数
+    Parameters
     ----
     saliency_list : list of np.ndarray
-        每个样本的 saliency 向量（长度 = 有效位置数）。
+        Saliency vector for each sample (length = number of valid positions).
     original_seq_list : list of list[str]
-        每个样本对应的 OG 序列（长度与 saliency 对齐）。
+        OG sequence corresponding to each sample (aligned with saliency length).
     sample_name_list : list of str
-        每个样本的名称（用于输出标记）。
+        Name of each sample (for output labeling).
     top_k : int
-        每个样本要输出的 top K 位置（按 saliency 从大到小排序）。
+        Top K positions to output for each sample (sorted by saliency descending).
 
-    返回
+    Returns
     ----
     all_top_positions : list[list[int]]
-        每个样本的 top_k 位置索引列表（按 saliency 降序）。
+        List of top_k position indices for each sample (sorted by saliency descending).
     all_top_scores : list[list[float]]
-        每个样本对应的 top_k saliency 分数列表。
+        List of top_k saliency scores for each sample.
     all_top_ogs : list[list[str]]
-        每个样本对应的 top_k OG 名称列表。
+        List of top_k OG names for each sample.
     records : list[dict]
-        展开后的记录，用于保存到 CSV，每一行是 (sample_name, rank, position, score, og, context_ogs)。
+        Expanded records for saving to CSV, each row is (sample_name, rank, position, score, og, context_ogs).
     """
     all_top_positions = []
     all_top_scores = []
@@ -310,9 +310,9 @@ def get_important_OG(saliency_list, original_seq_list, sample_name_list, top_k=1
         sal_eff = sal_i[:L_eff]
         og_eff = og_list[:L_eff]
 
-        # 取前 top_k 个位置，按 saliency 从大到小排序
+        # Take top_k positions, sorted by saliency descending
         k = min(top_k, L_eff)
-        sorted_idx = np.argsort(-sal_eff)[:k]  # 从大到小
+        sorted_idx = np.argsort(-sal_eff)[:k]  # descending order
 
         sample_positions = []
         sample_scores = []
@@ -328,7 +328,7 @@ def get_important_OG(saliency_list, original_seq_list, sample_name_list, top_k=1
             end = min(L_eff, pos + window + 1)
             fragment = og_eff[start:end]
 
-            # 只打印每个样本的 top1，避免日志爆炸
+            # Only print top1 for each sample to avoid log explosion
             if rank == 1:
                 print(f"Sample {name}:")
                 print(f"  Top position: {pos}")
@@ -358,7 +358,7 @@ def get_important_OG(saliency_list, original_seq_list, sample_name_list, top_k=1
     return all_top_positions, all_top_scores, all_top_ogs, records
 
 
-# ==================== 可视化函数 ====================
+# ==================== Visualization Functions ====================
 
 def plot_sequence_saliency_heatmap(
     sequence,
@@ -371,8 +371,8 @@ def plot_sequence_saliency_heatmap(
     show_colorbar=True
 ):
     """
-    sequence: list(str) 或 str，长度 L（这里是 OG 序列）
-    saliency: 1D array-like，长度 L
+    sequence: list(str) or str, length L (here is OG sequence)
+    saliency: 1D array-like, length L
     """
     if isinstance(sequence, str):
         seq_list = list(sequence)
@@ -462,7 +462,7 @@ def show_ith_sample_bar(sample_name_list,saliency_list, original_seq_list, i=0):
     )
     plt.savefig('saliency_heatmap.pdf', dpi=300, bbox_inches='tight')
 
-# ==================== 主训练函数 ====================
+# ==================== Main Training Function ====================
 
 def train_1dcnn(args):
 
@@ -485,29 +485,29 @@ def train_1dcnn(args):
     ### previous sample
     #train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
     
-    # ===== 使用 WeightedRandomSampler 做类别平衡采样 =====
+    # ===== Use WeightedRandomSampler for class-balanced sampling =====
     y_train_np = y_train.astype(np.int64)
     class_sample_count = np.bincount(y_train_np)
     print("Train class count:", class_sample_count)
     if class_sample_count.size < 2:
-        # 极端情况：训练集中只有一个类别，退化为普通 shuffle
-        print("Warning: 训练集中只有一个类别，退化为普通随机采样。")
+        # Extreme case: only one class in training set, fallback to normal shuffle
+        print("Warning: Only one class in training set, falling back to normal random sampling.")
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
     else:
         num_neg, num_pos = class_sample_count[0], class_sample_count[1]
-        # 给少数类更大的采样权重
+        # Give minority class larger sampling weight
         weights = np.where(y_train_np == 1, num_neg / max(num_pos, 1), 1.0).astype(np.float64)
         weights = torch.from_numpy(weights)
         sampler = WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, sampler=sampler)
 
-    # ===== 使用自定义的 collate_fn_test 函数构建测试 DataLoader =====
+    # ===== Build test DataLoader using custom collate_fn_test function =====
     test_loader  = DataLoader(test_ds,  batch_size=2, shuffle=False, collate_fn=collate_fn_test)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CNN1DClassifier(in_dim=D).to(device)
 
-    # ===== Loss: 使用 FocalLoss（不平衡适配） =====
+    # ===== Loss: Use FocalLoss (imbalance adaptation) =====
     pos_frac = y.mean()
     alpha = 1.0 - pos_frac
     print("Positive fraction:", pos_frac, " -> alpha for focal loss:", alpha)
@@ -521,8 +521,8 @@ def train_1dcnn(args):
     best_epoch = -1
     best_state_dict = None
 
-    patience = 5      # 允许连续不提升的 epoch 数
-    min_delta = 1e-3  # AUC 至少提升这么多才算“有进步”
+    patience = 5      # Number of consecutive epochs without improvement allowed
+    min_delta = 1e-3  # AUC must improve by at least this much to be considered "progress"
     no_improve_count = 0
     # ==============================================
 
@@ -544,7 +544,7 @@ def train_1dcnn(args):
 
         avg_loss = total_loss / len(train_loader.dataset)
 
-        # 验证
+        # Validation
         model.eval()
         all_logits = []
         all_labels = []
@@ -561,11 +561,11 @@ def train_1dcnn(args):
         all_labels = torch.cat(all_labels)
         probs = torch.sigmoid(all_logits).numpy()
 
-        # 默认 0.5 阈值下的精度
+        # Accuracy at default 0.5 threshold
         preds = (probs >= 0.5).astype(int)
         acc = accuracy_score(all_labels.numpy(), preds)
 
-        # AUC 不依赖阈值
+        # AUC does not depend on threshold
         weighted_f1  = None
         try:
             auc = roc_auc_score(all_labels.numpy(), probs)
@@ -573,7 +573,7 @@ def train_1dcnn(args):
         except ValueError:
             auc = None
 
-        # ===== 在验证集上扫描阈值，计算 balanced accuracy，缓解极端不平衡 =====
+        # ===== Scan threshold on validation set, compute balanced accuracy to mitigate extreme imbalance =====
         y_true = all_labels.numpy()
         best_thr = 0.5
         best_bal_acc = None
@@ -588,7 +588,7 @@ def train_1dcnn(args):
                     best_bal_acc = bal_acc
                     best_thr = thr
         
-        # 日志输出：同时给出 AUC、acc@0.5 和 best threshold 下的 balanced accuracy
+        # Log output: provide AUC, acc@0.5 and balanced accuracy at best threshold
         if auc is not None:
             if best_bal_acc is not None and best_bal_acc >= 0:
                 print(
@@ -619,28 +619,28 @@ def train_1dcnn(args):
             continue
         
         if metric > best_auc + min_delta:
-            # 有显著提升：更新 best
+            # Significant improvement: update best
             best_auc = metric
             best_epoch = epoch + 1
             best_state_dict = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             no_improve_count = 0
             print(f"  -> New best model at epoch {epoch+1}, metric={metric:.4f}")
         else:
-            # 没有提升：计数 +1
+            # No improvement: increment count
             no_improve_count += 1
             print(f"  -> No improvement for {no_improve_count} epoch(s) (best_auc={best_auc:.4f})")
             if no_improve_count >= patience:
                 print(f"Early stopping triggered at epoch {epoch+1}. Best epoch: {best_epoch}, best_auc={best_auc:.4f}")
                 break
     
-    # ===== 使用 best checkpoint 覆盖模型参数 =====
+    # ===== Use best checkpoint to overwrite model parameters =====
     if best_state_dict is not None:
         model.load_state_dict(best_state_dict)
         print(f"Loaded best model from epoch {best_epoch} with AUC={best_auc:.4f}")
     else:
         print("Warning: best_state_dict is None, using last epoch model.")
     
-    # 可选：保存模型到磁盘
+    # Optional: save model to disk
     Path("cnn_models").mkdir(parents=True, exist_ok=True)
     save_path = f"cnn_models/{task_path.stem}_best_cnn1d_model.pt"
     torch.save({
@@ -653,22 +653,22 @@ def train_1dcnn(args):
     }, save_path)
     print(f"Best model saved to {save_path}")
 
-    # ===== 训练结束后，计算每个样本的 saliency + OG 映射 =====
+    # ===== After training, compute saliency + OG mapping for each sample =====
     saliency_list, length_list, original_seq_list, sample_name_list = compute_saliency_and_map_to_sequences(
         model, test_loader, device
     )
 
-    # 简单检查
+    # Simple check
     for i, saliency in enumerate(saliency_list[:5]):
         print(f"[Check] Sample {sample_name_list[i]}: saliency_len={len(saliency)}, "
               f"length={length_list[i]}, OG_len={len(original_seq_list[i])}")
 
-    # 输出每个样本 top-K OG（K 由参数 --top_k 控制）
+    # Output top-K OG for each sample (K controlled by --top_k parameter)
     top_positions, top_scores, top_ogs, records = get_important_OG(
         saliency_list, original_seq_list, sample_name_list, top_k=args.top_k
     )
 
-    # 将所有样本的 top-K 结果保存为 CSV，方便后续分析
+    # Save top-K results for all samples as CSV for subsequent analysis
     if len(records) > 0:
         df_top = pd.DataFrame.from_records(records)
         output_dir = Path(args.output_dir)
@@ -679,10 +679,7 @@ def train_1dcnn(args):
     else:
         print("Warning: no saliency records to save (empty records list).")
 
-    # 如果想看某一个样本的热图：
-    # show_ith_sample_bar(saliency_list, original_seq_list, i=0)
-
-    # 如果想看某一个样本的热图：
+    # If you want to see heatmap for a specific sample:
     # show_ith_sample_bar(saliency_list, original_seq_list, i=0)
     
     model.eval()
@@ -704,7 +701,7 @@ def train_1dcnn(args):
             all_pred_probs.extend(probs)
             all_pred_labels.extend(preds)
 
-    # 创建预测结果DataFrame
+    # Create prediction results DataFrame
     test_results_df = pd.DataFrame({
         'sample_name': all_test_names,
         'true_label': all_true_labels,
@@ -712,7 +709,7 @@ def train_1dcnn(args):
         'predicted_label': all_pred_labels
     })
 
-    # 计算评估指标
+    # Compute evaluation metrics
     try:
         auc = roc_auc_score(all_true_labels, all_pred_probs)
         weighted_f1 = f1_score(all_true_labels, all_pred_labels, average='weighted')
@@ -720,7 +717,7 @@ def train_1dcnn(args):
         precision = precision_score(all_true_labels, all_pred_labels, average='binary', zero_division=0)
         recall = recall_score(all_true_labels, all_pred_labels, average='binary', zero_division=0)
 
-        # 添加评估指标到CSV文件头或单独保存
+        # Add evaluation metrics to CSV header or save separately
         metrics_summary = {
             'AUC': auc,
             'Weighted_F1': weighted_f1,
@@ -730,28 +727,28 @@ def train_1dcnn(args):
         }
 
         print("\n" + "="*50)
-        print("模型评估指标:")
+        print("Model Evaluation Metrics:")
         print("="*50)
         for metric, value in metrics_summary.items():
             print(f"{metric}: {value:.4f}")
         print("="*50)
 
     except Exception as e:
-        print(f"计算评估指标时出错: {e}")
+        print(f"Error computing evaluation metrics: {e}")
         metrics_summary = {}
 
     test_results_path = output_dir / f"{task_path.stem}_test_predictions.csv"
     test_results_df.to_csv(test_results_path, index=False)
     print(f"Saved test set predictions to {test_results_path}")
 
-    # 3. 保存评估指标（可选）
+    # 3. Save evaluation metrics (optional)
     if metrics_summary:
         metrics_df = pd.DataFrame([metrics_summary])
         metrics_path = output_dir / f"{task_path.stem}_evaluation_metrics.csv"
         metrics_df.to_csv(metrics_path, index=False)
         print(f"Saved evaluation metrics to {metrics_path}")
 
-# ==================== 参数解析 & main ====================
+# ==================== Argument Parsing & main ====================
 
 def pred_1dcnn(args):
     ### 
@@ -781,12 +778,12 @@ def pred_1dcnn(args):
         model, test_loader, device
     )
 
-    # 简单检查
+    # Simple check
     #for i, saliency in enumerate(saliency_list[:5]):
     #    print(f"[Check] Sample {sample_name_list[i]}: saliency_len={len(saliency)}, "
     #          f"length={length_list[i]}, OG_len={len(original_seq_list[i])}")
     
-    # 输出每个样本 top-K OG（K 由参数 --top_k 控制）
+    # Output top-K OG for each sample (K controlled by --top_k parameter)
     top_positions, top_scores, top_ogs, records = get_important_OG(
         saliency_list, original_seq_list, sample_name_list, top_k=args.top_k
     )

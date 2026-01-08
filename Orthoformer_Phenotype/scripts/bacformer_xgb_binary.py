@@ -25,22 +25,22 @@ from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 plt.switch_backend('Agg')
 
-# ========== 工具函数 ==========
+# ========== Utility Functions ==========
 def get_file_stem(path: str) -> str:
     """
-    给定一个文件路径，返回不带扩展名的文件名
-    例如: /a/b/c/file.txt -> file
+    Given a file path, return the filename without extension
+    Example: /a/b/c/file.txt -> file
     """
     return Path(path).stem
 
 
-# ========== 主类 ========== #
+# ========== Main Class ========== #
 class BinaryClassificationModel:
     def __init__(self, csv_path, bacformer, data_folder,
                  test_size=0.2, random_state=42,
                  outdir="/mnt/disk_c/user_data/liuping/bacformer/results"):
         """
-        初始化二分类模型
+        Initialize binary classification model
         """
         self.csv_path = csv_path
         self.data_folder = data_folder
@@ -53,7 +53,7 @@ class BinaryClassificationModel:
 
     def _to_numpy_2d(self, x_tensor: torch.Tensor) -> np.ndarray:
         """
-        把 torch.Tensor(N, D) 转为 numpy.ndarray(N, D)
+        Convert torch.Tensor(N, D) to numpy.ndarray(N, D)
         """
         if isinstance(x_tensor, torch.Tensor):
             return x_tensor.detach().cpu().numpy()
@@ -61,49 +61,49 @@ class BinaryClassificationModel:
 
     def load_and_preprocess_data(self):
         """
-        加载CSV数据并从文件中提取特征
-        返回:
+        Load CSV data and extract features from files
+        Returns:
             X (torch.Tensor[N, D]),
             y (np.ndarray[N]),
             sample_names (list[str]),
             missing_files (list[str]),
             data_info (dict)
         """
-        # 加载CSV数据
+        # Load CSV data
         df = pd.read_csv(self.csv_path)
 
-        # 基本信息
+        # Basic information
         total_samples = len(df)
         label_counts = df['Label'].value_counts().to_dict()
         positive_ratio = float(df['Label'].mean())
 
-        print("数据基本信息:")
-        print(f"总样本数: {total_samples}")
-        print(f"类别分布: {label_counts}")
-        print(f"阳性比例: {positive_ratio:.3f}")
+        print("Basic data information:")
+        print(f"Total samples: {total_samples}")
+        print(f"Class distribution: {label_counts}")
+        print(f"Positive ratio: {positive_ratio:.3f}")
 
         if not os.path.exists(self.data_folder):
-            raise ValueError(f"数据文件夹 '{self.data_folder}' 不存在")
+            raise ValueError(f"Data folder '{self.data_folder}' does not exist")
 
         X, y = [], []
         sample_names = []
         missing_files = []
 
-        print("\n正在从文件中提取特征...")
+        print("\nExtracting features from files...")
         for _, row in df.iterrows():
             orig_name = row['genome_name']
             genome_name = orig_name
             found_file = None
             base_path = os.path.join(self.data_folder, genome_name)
 
-            # 常见扩展名尝试
+            # Try common extensions
             for ext in ['', '.fasta', '.fna', '.fa', '.txt', '.gbff', '.gbk', '.pt']:
                 test_path = base_path + ext
                 if os.path.exists(test_path):
                     found_file = test_path
                     break
 
-            # 尝试 RS_/GB_ 前缀
+            # Try RS_/GB_ prefix
             if found_file is None:
                 for prefix in ['RS', 'GB']:
                     genome_name = f"{prefix}_{orig_name}"
@@ -118,9 +118,9 @@ class BinaryClassificationModel:
 
             if found_file:
                 try:
-                    # 提取特征
+                    # Extract features
                     if self.bacformer:
-                        # CSV 中保存的字符串向量 -> tensor
+                        # String vector saved in CSV -> tensor
                         features_str = row['bacformer_genome_embedding']
                         vec = [float(x) for x in features_str.replace('\n', ' ')
                                                        .replace('[', '')
@@ -128,7 +128,7 @@ class BinaryClassificationModel:
                                                        .split()]
                         features = torch.tensor(vec, dtype=torch.float32)
                     else:
-                        # 从 .pt 读你的 embedding（或兼容 list/ndarray）
+                        # Read embedding from .pt (or compatible with list/ndarray)
                         features = torch.load(found_file)
                         if isinstance(features, np.ndarray):
                             features = torch.tensor(features, dtype=torch.float32)
@@ -137,28 +137,28 @@ class BinaryClassificationModel:
                         else:
                             features = features.to(dtype=torch.float32)
 
-                    # 确保是一维
+                    # Ensure 1D
                     features = features.flatten()
 
                     X.append(features)
                     y.append(int(row['Label']))
                     sample_names.append(genome_name)
                 except Exception as e:
-                    print(f"处理文件 {found_file} 时出错: {e}")
+                    print(f"Error processing file {found_file}: {e}")
                     missing_files.append(genome_name)
             else:
                 missing_files.append(genome_name)
 
-        print(f"\n成功处理: {len(sample_names)} 个文件")
-        print(f"缺失文件: {len(missing_files)} 个")
+        print(f"\nSuccessfully processed: {len(sample_names)} files")
+        print(f"Missing files: {len(missing_files)}")
         if missing_files:
-            print("示例缺失文件:", missing_files[:5])
+            print("Example missing files:", missing_files[:5])
 
         y = np.array(y)
         if len(X) == 0:
             X_tensor = torch.empty((0, 0), dtype=torch.float32)
         else:
-            # 对齐维度（如果各样本向量长度差异，右侧零填充）
+            # Align dimensions (if vector lengths differ, zero-pad on the right)
             max_dim = max(x.numel() for x in X)
             X_padded = []
             for x in X:
@@ -169,9 +169,9 @@ class BinaryClassificationModel:
                     X_padded.append(x)
             X_tensor = torch.stack(X_padded, dim=0)
 
-        print(f"\n特征矩阵形状: {tuple(X_tensor.shape)}")
+        print(f"\nFeature matrix shape: {tuple(X_tensor.shape)}")
         if X_tensor.numel() > 0:
-            print(f"特征数量: {X_tensor.shape[1]}")
+            print(f"Number of features: {X_tensor.shape[1]}")
 
         #data_info = {
         #    "total samples": total_samples,
@@ -181,11 +181,11 @@ class BinaryClassificationModel:
         #    "distribution": label_counts
         #}
         data_info = {                                                                                         
-                "总样本数": total_samples,
-                "成功处理文件数": len(sample_names),
-                "缺失文件数": len(missing_files),
-                "阳性比例": positive_ratio,
-                "类别分布": label_counts
+                "total_samples": total_samples,
+                "processed_samples": len(sample_names),
+                "missing_files": len(missing_files),
+                "positive_ratio": positive_ratio,
+                "label_distribution": label_counts
         }   
 
 
@@ -194,7 +194,7 @@ class BinaryClassificationModel:
 
     def train_test_split_data(self, X, y, sample_names):
         """
-        分割训练集和测试集（保持名称对齐）
+        Split training and test sets (maintain name alignment)
         """
         X_np = self._to_numpy_2d(X)
         names = np.array(sample_names)
@@ -206,17 +206,17 @@ class BinaryClassificationModel:
             stratify=y
         )
 
-        print("\n数据分割结果:")
-        print(f"训练集: {X_tr.shape[0]} 个样本")
-        print(f"测试集: {X_te.shape[0]} 个样本")
-        print(f"训练集类别分布: {np.bincount(y_tr)}")
-        print(f"测试集类别分布: {np.bincount(y_te)}")
+        print("\nData split results:")
+        print(f"Training set: {X_tr.shape[0]} samples")
+        print(f"Test set: {X_te.shape[0]} samples")
+        print(f"Training set class distribution: {np.bincount(y_tr)}")
+        print(f"Test set class distribution: {np.bincount(y_te)}")
 
         return X_tr, X_te, y_tr, y_te, n_tr.tolist(), n_te.tolist()
 
-    # ===== 三种模型：按需选择 =====
+    # ===== Three models: choose as needed =====
     def train_logistic_regression(self, X_train, X_test, y_train, y_test):
-        print("\n训练逻辑回归模型...")
+        print("\nTraining logistic regression model...")
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled  = self.scaler.transform(X_test)
 
@@ -252,17 +252,17 @@ class BinaryClassificationModel:
             'model_name': 'logistic_regression'
         }
 
-        print("逻辑回归模型性能:")
-        print(f"  准确率: {accuracy:.4f}")
-        print(f"  精确率: {precision:.4f}")
-        print(f"  召回率: {recall:.4f}")
-        print(f"  F1分数: {f1:.4f}")
+        print("Logistic regression model performance:")
+        print(f"  Accuracy: {accuracy:.4f}")
+        print(f"  Precision: {precision:.4f}")
+        print(f"  Recall: {recall:.4f}")
+        print(f"  F1-score: {f1:.4f}")
         print(f"  ROC AUC: {roc_auc:.4f}")
 
         return results
 
     def train_random_forest(self, X_train, X_test, y_train, y_test):
-        print("\n训练随机森林模型...")
+        print("\nTraining random forest model...")
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled  = self.scaler.transform(X_test)
 
@@ -298,17 +298,17 @@ class BinaryClassificationModel:
             'model_name': 'random_forest'
         }
 
-        print("随机森林模型性能:")
-        print(f"  准确率: {accuracy:.4f}")
-        print(f"  精确率: {precision:.4f}")
-        print(f"  召回率: {recall:.4f}")
-        print(f"  F1分数: {f1:.4f}")
+        print("Random forest model performance:")
+        print(f"  Accuracy: {accuracy:.4f}")
+        print(f"  Precision: {precision:.4f}")
+        print(f"  Recall: {recall:.4f}")
+        print(f"  F1-score: {f1:.4f}")
         print(f"  ROC AUC: {roc_auc:.4f}")
 
         return results
 
     def train_xgboost_classifier(self, X_train, X_test, y_train, y_test):
-        print("\n训练 XGBoost 分类模型...")
+        print("\nTraining XGBoost classifier model...")
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled  = self.scaler.transform(X_test)
 
@@ -357,30 +357,30 @@ class BinaryClassificationModel:
             'model_name': 'xgboost'
         }
 
-        print("XGBoost 分类模型性能:")
-        print(f"  准确率: {accuracy:.4f}")
-        print(f"  精确率: {precision:.4f}")
-        print(f"  召回率: {recall:.4f}")
-        print(f"  F1分数: {f1:.4f}")
+        print("XGBoost classifier model performance:")
+        print(f"  Accuracy: {accuracy:.4f}")
+        print(f"  Precision: {precision:.4f}")
+        print(f"  Recall: {recall:.4f}")
+        print(f"  F1-score: {f1:.4f}")
         print(f"  ROC AUC: {roc_auc:.4f}")
 
         return results
 
-    # ===== 可视化并保存 =====
+    # ===== Visualization and Saving =====
     def plot_results(self, y_test, results, prefix="model"):
         """
-        绘制并保存结果可视化（混淆矩阵/ROC/指标条形图），并可选保存特征重要性图
+        Plot and save result visualizations (confusion matrix/ROC/metric bar chart), optionally save feature importance plot
         """
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
-        # 1. 混淆矩阵
+        # 1. Confusion matrix
         cm = results['confusion_matrix']
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0, 0])
         axes[0, 0].set_title('Confusion Matrix')
         axes[0, 0].set_xlabel('Prediction')
         axes[0, 0].set_ylabel('True')
 
-        # 2. ROC 曲线
+        # 2. ROC curve
         fpr, tpr, _ = roc_curve(y_test, results['y_pred_proba'])
         roc_auc = auc(fpr, tpr)
         axes[0, 1].plot(fpr, tpr, label=f'ROC (AUC = {roc_auc:.3f})', linewidth=2)
@@ -391,10 +391,9 @@ class BinaryClassificationModel:
         axes[0, 1].legend()
         axes[0, 1].grid(True, alpha=0.3)
 
-        # 3. 性能指标条形图
+        # 3. Performance metrics bar chart
         metrics = ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
         metrics_label = ['Accuracy', 'Precision', 'Recall', 'F1-score', 'AUC']
-        metric_names = ['准确率', '精确率', '召回率', 'F1分数', 'ROC AUC']
         scores = [results[m] for m in metrics]
 
         #bars = axes[1, 0].bar(metric_names, scores, alpha=0.85)
@@ -409,23 +408,23 @@ class BinaryClassificationModel:
             axes[1, 0].text(bar.get_x()+bar.get_width()/2., h + 0.01,
                             f'{score:.3f}', ha='center', va='bottom')
 
-        # 4. 预留子图位（可显示特征重要性缩略图）
+        # 4. Reserved subplot position (can display feature importance thumbnail)
         axes[1, 1].axis('off')
 
         plt.tight_layout()
 
-        # 保存主结果图
+        # Save main result figure
         fig_path = os.path.join(self.outdir, f"{prefix}_results.pdf")
         plt.savefig(fig_path, dpi=300, bbox_inches='tight',format='pdf')
-        print(f"结果图已保存: {fig_path}")
+        print(f"Result figure saved: {fig_path}")
         plt.close(fig)
 
-        # 可选：保存特征重要性（若有）
+        # Optional: save feature importance (if available)
         fi = results.get('feature_importance', None)
         if fi is not None:
             try:
                 plt.figure(figsize=(10, 6))
-                # 若特征太多，只画前 30 个
+                # If too many features, only plot top 30
                 idx = np.argsort(fi)[::-1][:30]
                 plt.bar(range(len(idx)), np.array(fi)[idx])
                 plt.xticks(range(len(idx)), [f"f{int(i)}" for i in idx], rotation=90)
@@ -434,40 +433,40 @@ class BinaryClassificationModel:
                 fi_path = os.path.join(self.outdir, f"{prefix}_feature_importance.pdf")
                 plt.tight_layout()
                 plt.savefig(fi_path, dpi=300, bbox_inches='tight',format='pdf')
-                print(f"特征重要性图已保存: {fi_path}")
+                print(f"Feature importance figure saved: {fi_path}")
                 plt.close()
             except Exception as _:
-                # 一些模型的 coef_ 形状可能不匹配，或者数量太大
+                # Some models' coef_ shape may not match, or quantity too large
                 pass
 
-    # ===== 保存模型 =====
+    # ===== Save Model =====
     def save_model(self, model, model_name):
         """
-        保存训练好的模型和标准化器
+        Save trained model and scaler
         """
         model_path = os.path.join(self.outdir, f'{model_name}_model.pkl')
         scaler_path = os.path.join(self.outdir, 'scaler.pkl')
         joblib.dump(model, model_path)
         joblib.dump(self.scaler, scaler_path)
-        print(f"模型和标准化器已保存：\n  {model_path}\n  {scaler_path}")
+        print(f"Model and scaler saved:\n  {model_path}\n  {scaler_path}")
 
-    # ===== CSV 保存：数据与评估 =====
+    # ===== CSV Saving: Data and Evaluation =====
     def save_results_to_csv(self, results, data_info, y_test, y_pred, y_pred_proba, test_names,
                             prefix: str):
         """
-        保存以下表格：
-        1) 训练评估摘要  -> {prefix}_summary.csv
-        2) 逐类指标      -> {prefix}_classification_report.csv
-        3) 混淆矩阵      -> {prefix}_confusion_matrix.csv
-        4) 每样本预测    -> {prefix}_per_sample_predictions.csv
+        Save the following tables:
+        1) Training evaluation summary  -> {prefix}_summary.csv
+        2) Per-class metrics            -> {prefix}_classification_report.csv
+        3) Confusion matrix             -> {prefix}_confusion_matrix.csv
+        4) Per-sample predictions       -> {prefix}_per_sample_predictions.csv
         """
-        # 1) 训练评估摘要
+        # 1) Training evaluation summary
         summary_dict = {
-            "total samples": data_info["总样本数"],
-            "processed samples": data_info["成功处理文件数"],
-            "missing": data_info["缺失文件数"],
-            "positive ratio": data_info["阳性比例"],
-            "label distribution": str(data_info["类别分布"]),
+            "total samples": data_info["total_samples"],
+            "processed samples": data_info["processed_samples"],
+            "missing": data_info["missing_files"],
+            "positive ratio": data_info["positive_ratio"],
+            "label distribution": str(data_info["label_distribution"]),
             "accuracy": results['accuracy'],
             "precision": results['precision'],
             "recall": results['recall'],
@@ -480,7 +479,7 @@ class BinaryClassificationModel:
             index=False, encoding="utf-8"
         )
 
-        # 2) 逐类指标
+        # 2) Per-class metrics
         cls_report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
         rep_df = pd.DataFrame(cls_report).transpose().reset_index().rename(columns={"index": "class"})
         rep_df.to_csv(
@@ -488,7 +487,7 @@ class BinaryClassificationModel:
             index=False, encoding="utf-8"
         )
 
-        # 3) 混淆矩阵
+        # 3) Confusion matrix
         cm = results['confusion_matrix']
         cm_df = pd.DataFrame(cm, columns=['pred_0', 'pred_1'])
         cm_df.insert(0, 'true', ['true_0', 'true_1'])
@@ -497,7 +496,7 @@ class BinaryClassificationModel:
             index=False, encoding="utf-8"
         )
 
-        # 4) 每样本预测
+        # 4) Per-sample predictions
         per_sample = pd.DataFrame({
             "sample_name": test_names,
             "y_true": y_test,
@@ -509,11 +508,11 @@ class BinaryClassificationModel:
             index=False, encoding="utf-8"
         )
 
-        print(f"结果 CSV 已保存到目录：{self.outdir}")
+        print(f"Result CSVs saved to directory: {self.outdir}")
 
     def save_missing_list(self, missing_files, prefix: str):
         """
-        保存缺失文件列表
+        Save missing file list
         """
         if len(missing_files) == 0:
             return
@@ -522,25 +521,25 @@ class BinaryClassificationModel:
             os.path.join(self.outdir, f"{prefix}_missing_files.csv"),
             index=False, encoding="utf-8"
         )
-        print(f"缺失文件列表已保存：{prefix}_missing_files.csv")
+        print(f"Missing file list saved: {prefix}_missing_files.csv")
 
     def run(self, which_model="xgboost"):
         """
-        运行完整的训练流程
+        Run complete training pipeline
         which_model: "logistic" | "rf" | "xgboost"
         """
-        print("开始二分类模型训练...")
+        print("Starting binary classification model training...")
         try:
-            # 1) 加载数据 + 特征
+            # 1) Load data + features
             X, y, names, missing_files, data_info = self.load_and_preprocess_data()
             if X.shape[0] == 0:
-                print("没有成功提取特征的文件，无法训练模型")
+                print("No files successfully extracted features, cannot train model")
                 return None
 
-            # 2) 划分数据（含名称）
+            # 2) Split data (including names)
             X_train, X_test, y_train, y_test, names_train, names_test = self.train_test_split_data(X, y, names)
 
-            # 3) 训练模型（任选其一）
+            # 3) Train model (choose one)
             if which_model == "logistic":
                 results = self.train_logistic_regression(X_train, X_test, y_train, y_test)
             elif which_model == "rf":
@@ -548,13 +547,13 @@ class BinaryClassificationModel:
             else:
                 results = self.train_xgboost_classifier(X_train, X_test, y_train, y_test)
 
-            # 4) 可视化并保存图像
+            # 4) Visualize and save images
             self.plot_results(y_test, results, prefix=results.get('model_name', 'model'))
 
-            # 5) 保存模型
+            # 5) Save model
             self.save_model(results['model'], results.get('model_name', 'model'))
 
-            # 6) 保存 CSV（摘要、报告、混淆矩阵、逐样本）
+            # 6) Save CSV (summary, report, confusion matrix, per-sample)
             prefix = f"{results.get('model_name','model')}"
             self.save_results_to_csv(
                 results=results,
@@ -566,17 +565,17 @@ class BinaryClassificationModel:
                 prefix=prefix
             )
 
-            # 7) 缺失文件列表
+            # 7) Missing file list
             self.save_missing_list(missing_files, prefix=prefix)
 
-            # 8) 控制台输出详细分类报告
-            print("\n详细分类报告:")
+            # 8) Console output detailed classification report
+            print("\nDetailed classification report:")
             print(classification_report(y_test, results['y_pred'], zero_division=0))
 
             return results['model']
 
         except Exception as e:
-            print(f"训练过程中出错: {e}")
+            print(f"Error during training: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -584,31 +583,31 @@ class BinaryClassificationModel:
 import argparse
 
 def parse_argv():
-    # 创建 ArgumentParser 对象
-    parser = argparse.ArgumentParser(description='这是一个处理三个参数的示例程序')
+    # Create ArgumentParser object
+    parser = argparse.ArgumentParser(description='Example program that processes three parameters')
     
-    # 添加三个必需的位置参数
-    parser.add_argument('-i','--input_file', default="classified_output/binary/madin_carbsubs_caprate.csv",help='输入文件路径')
-    parser.add_argument('-o','--output_dir', default="binary",help='输出目录路径')
-    parser.add_argument('-e','--embedding_dir', default="embeddings_4000_v1_a2",help='运行模式')
-    parser.add_argument('--force', '-f', action='store_true', default=False, help='强制覆盖已存在文件')
+    # Add three required positional parameters
+    parser.add_argument('-i','--input_file', default="classified_output/binary/madin_carbsubs_caprate.csv",help='Input file path')
+    parser.add_argument('-o','--output_dir', default="binary",help='Output directory path')
+    parser.add_argument('-e','--embedding_dir', default="embeddings_4000_v1_a2",help='Run mode')
+    parser.add_argument('--force', '-f', action='store_true', default=False, help='Force overwrite existing files')
     
-    # 解析参数
+    # Parse arguments
     args = parser.parse_args()
     
-    # 使用参数
-    print(f"输入文件: {args.input_file}")
-    print(f"输出目录: {args.output_dir}")
-    print(f"运行模式: {args.embedding_dir}")
+    # Use arguments
+    print(f"Input file: {args.input_file}")
+    print(f"Output directory: {args.output_dir}")
+    print(f"Run mode: {args.embedding_dir}")
     
     return args
 
-# ========== 使用示例 ========== #
+# ========== Usage Example ========== #
 if __name__ == "__main__":
     args = parse_argv()
     csv_path = args.input_file ###, csv
 
-    # 按文件名自动创建输出子目录
+    # Automatically create output subdirectory based on filename
     
     feature_marker = "our_ft"
     
@@ -623,16 +622,16 @@ if __name__ == "__main__":
 
     classifier = BinaryClassificationModel(
         csv_path=csv_path,
-        data_folder=data_folder ,  # 替换为你的数据文件夹
+        data_folder=data_folder ,  # Replace with your data folder
         bacformer=args.force,
-        test_size=0.2,   # 4:1 分割
+        test_size=0.2,   # 4:1 split
         random_state=42,
-        outdir=output_dir # 输出目录
+        outdir=output_dir # Output directory
     )
 
     model = classifier.run(which_model="xgboost")  # "logistic" | "rf" | "xgboost"
 
     if model:
-        print("\n训练完成并已保存所有 CSV/图像结果与模型。")
+        print("\nTraining completed and all CSV/image results and model saved.")
     else:
-        print("\n训练失败，请检查数据和代码。")
+        print("\nTraining failed, please check data and code.")

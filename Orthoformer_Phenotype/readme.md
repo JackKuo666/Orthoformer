@@ -30,6 +30,26 @@ This task includes 5 folders, 1 bash script, a README, and python package requir
 ### 8. **README**
 - This file.
 
+## Dataset Download
+
+The required datasets for this project can be downloaded from the Hugging Face repository:
+
+### Phenotype Dataset
+
+**Download URL:** https://huggingface.co/datasets/jackkuo/Orthoformer/tree/main/Downstream_Tasks_dataset/Orthoformer_Phenotype_dataset
+
+**Dataset Structure:**
+
+After downloading, the dataset contains the following folders:
+
+- **embeddings_4000_v2/**: Contains embeddings generated with sequence length 4000
+- **OG_embedding/**: Contains orthologous group (OG) embeddings
+- **bacformer_embedding/**: Contains BacFormer model embeddings
+
+**Note**: 
+- Place the downloaded dataset files in the appropriate directories as specified in the subproject documentation.
+
+
 ## Quick Start
 
 1. Install required packages:

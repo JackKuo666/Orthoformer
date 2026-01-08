@@ -8,6 +8,8 @@ root_dir = "/mnt/disk_c/user_data/liuping/bacformer/results/"
 out_csv = "/mnt/disk_c/user_data/liuping/bacformer/merged_summary.csv"
 
 # ---- Binary summary (xgboost_summary.csv) column rename: Chinese -> English ----
+# Note: The Chinese keys are kept here because they represent the actual column names 
+# in the input CSV files that need to be renamed to English.
 BINARY_RENAME = {
     "总样本数":       "total_samples",
     "成功处理文件数": "processed_samples",

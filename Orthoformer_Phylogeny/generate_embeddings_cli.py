@@ -29,24 +29,24 @@ def load_model_with_alibi(model_dir: str, device: torch.device, use_alibi: bool 
             model = BertModel.from_pretrained(model_dir)
 
         try:
-            from pretrainer import CustomBertSelfAttention  # local module
-
+            from orthoformer_model import OrthoformerSelfAttention
             print("[Info] Applying ALiBi positional encoding to attention layers...")
             num_layers_replaced = 0
             for layer in model.encoder.layer:
                 orig_sa = layer.attention.self
-                if isinstance(orig_sa, CustomBertSelfAttention):
-                    print(f"[Info] Layer {num_layers_replaced + 1} already uses CustomBertSelfAttention")
+                # Check if already OrthoformerSelfAttention
+                if isinstance(orig_sa, OrthoformerSelfAttention):
+                    print(f"[Info] Layer {num_layers_replaced + 1} already has OrthoformerSelfAttention")
                 else:
-                    layer.attention.self = CustomBertSelfAttention(
+                    layer.attention.self = OrthoformerSelfAttention(
                         orig_sa,
                         pos_kind="alibi",
-                        max_position_embeddings=model.config.max_position_embeddings,
+                        max_position_embeddings=model.config.max_position_embeddings
                     )
                 num_layers_replaced += 1
             print(f"[Info] Successfully applied ALiBi to {num_layers_replaced} attention layers")
-        except ImportError as exc:
-            print(f"[Warn] Failed to import CustomBertSelfAttention: {exc}")
+        except ImportError as e:
+            print(f"[Warn] Failed to import OrthoformerSelfAttention: {e}")
             print("[Warn] Model will use standard attention (ALiBi functionality disabled)")
         except Exception as exc:
             print(f"[Warn] Failed to apply ALiBi: {exc}")

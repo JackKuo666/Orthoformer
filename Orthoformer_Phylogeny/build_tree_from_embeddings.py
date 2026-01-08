@@ -241,12 +241,12 @@ def nj_skbio(D, names, out_newick):
 
 def build_tree(D, names, method="nj", out_newick="tree.nwk"):
     """
-    由距离矩阵构树，method ∈ {
-        'nj', 'upgma',          # Bio.Phylo (原版)
-        'nj_skbio',             # 更快的 NJ（如安装 scikit-bio）
-        'upgma_scipy'           # 更快的 UPGMA（SciPy linkage）
+    Build tree from distance matrix, method ∈ {
+        'nj', 'upgma',          # Bio.Phylo (original)
+        'nj_skbio',             # Faster NJ (if scikit-bio installed)
+        'upgma_scipy'           # Faster UPGMA (SciPy linkage)
     }
-    输出 Newick 到 out_newick。
+    Output Newick to out_newick.
     """
     method = method.lower()
     print(f"constructing tree with method: {method}")
@@ -273,8 +273,8 @@ def build_tree(D, names, method="nj", out_newick="tree.nwk"):
 
 def load_taxonomy_map(taxonomy_map_tsv):
     """
-    读取 taxonomy 映射：两列 TSV：sample_name \t taxonomy_string
-    返回 dict: name -> taxonomy
+    Read taxonomy mapping: two-column TSV: sample_name \t taxonomy_string
+    Returns dict: name -> taxonomy
     """
     mapping = {}
     with open(taxonomy_map_tsv) as f:
@@ -291,11 +291,11 @@ def load_taxonomy_map(taxonomy_map_tsv):
 
 def write_itol_text_labels(names, taxonomy_map, out_file="itol_ranges.txt"):
     """
-    生成 iTOL 的 DATASET_RANGE 文件（高亮单叶/克莱德）。
-    这里按 *range* 示例的格式输出（SEPARATOR COMMA），每个样本一行：
+    Generate iTOL DATASET_RANGE file (highlight single leaf/clade).
+    Output in *range* example format (SEPARATOR COMMA), one sample per line:
       START_NODE_ID,END_NODE_ID,FILL_COLOR
-    我们将 START=END=样本名；颜色由 taxonomy 文本经稳定哈希得到。
-    参考: iTOL range dataset 示例。
+    We set START=END=sample name; color obtained from taxonomy text via stable hash.
+    Reference: iTOL range dataset example.
     """
     rows = 0
     with open(out_file, "w") as f:
@@ -326,7 +326,7 @@ def write_itol_text_labels(names, taxonomy_map, out_file="itol_ranges.txt"):
             if label is None or str(label).strip() == "":
                 continue
             color = _stable_hex_color(str(label))
-            # 最简三列: start,end,fill_color
+            # Simplest three columns: start,end,fill_color
             f.write(f"{n},{n},{color}\n")
             rows += 1
     print(f"Saved iTOL RANGE dataset to {out_file} (rows: {rows})")
@@ -335,10 +335,10 @@ def write_itol_text_labels(names, taxonomy_map, out_file="itol_ranges.txt"):
 
 def compute_nrf(pred_tree_newick, ref_tree_newick, out_pruned_pred=None, out_pruned_ref=None):
     """
-    计算 normalized RF 距离：
-      - 将两棵树裁剪到共有叶子集合
-      - 计算 RF 与 nRF
-    需要 ete3，可选保存裁剪后的 newick。
+    Compute normalized RF distance:
+      - Prune both trees to shared leaf set
+      - Compute RF and nRF
+    Requires ete3, optionally saves pruned newick.
     """
     if not HAS_ETE3:
         print("ete3 not installed; skip nRF. (pip install ete3)")
@@ -357,7 +357,7 @@ def compute_nrf(pred_tree_newick, ref_tree_newick, out_pruned_pred=None, out_pru
         print("Too few shared leaves (<3) for meaningful RF.")
         return None
 
-    # 裁剪到共同叶子
+    # Prune to common leaves
     t1.prune(common, preserve_branch_length=True)
     t2.prune(common, preserve_branch_length=True)
 
@@ -390,12 +390,12 @@ def main():
     parser.add_argument("--input_samples", type=str, default=None, help="Optional file with target sample names (one per line). If provided, only these samples will be used to build the tree.")
     args = parser.parse_args()
 
-    # 1) 加载并取均值得到 [N, D]
+    # 1) Load and take mean to get [N, D]
     include_names = _read_input_samples(args.input_samples) if args.input_samples else None
     X, names = load_embeddings_from_dir(args.data_dir, include_names=include_names)
     save_matrix_and_csv(X, names, args.out_prefix, save_csv=args.save_csv)
 
-    # 2) 可选 L2 归一化（按行）
+    # 2) Optional L2 normalization (row-wise)
     if args.no_l2:
         print("Skipping L2 normalization (--no_l2)")
         X_used = X
@@ -403,21 +403,21 @@ def main():
         print("Applying L2 normalization")
         X_used = l2_normalize(X)
 
-    # 3) 距离矩阵
+    # 3) Distance matrix
     D = compute_distance_matrix(X_used, metric=args.metric)
     np.save(f"{args.out_prefix}.dist.npy", D)
     print(f"Saved distance matrix to {args.out_prefix}.dist.npy")
 
-    # 4) NJ / UPGMA 构树
+    # 4) NJ / UPGMA tree construction
     newick_path = f"{args.out_prefix}.{args.method}.nwk"
     build_tree(D, names, method=args.method, out_newick=newick_path)
 
-    # 5) taxonomy 装饰（iTOL 文本数据集）
+    # 5) Taxonomy annotation (iTOL text dataset)
     if args.taxonomy_map and args.itol_labels:
         tx = load_taxonomy_map(args.taxonomy_map)
         write_itol_text_labels(names, tx, out_file=args.itol_labels)
 
-    # 6) nRF 与参考树比较（可选）
+    # 6) nRF comparison with reference tree (optional)
     if args.ref_tree:
         if not os.path.isfile(args.ref_tree):
             print(f"Reference tree not found: {args.ref_tree}")
@@ -440,14 +440,14 @@ GB_GCA_019116455.1    d__Bacteria;p__Proteobacteria;...
 
 ## Usage
 python build_tree_from_embeddings.py \
-  --data_dir dataset \  # 存放每个样本的.npy文件
-  --out_prefix result \  # 输出文件前缀
-  --method nj \  # 构树方法
-  --metric euclidean \  # 距离度量
-  --save_csv \  # 保存CSV文件（可选）
-  --taxonomy_map taxonomy_map.tsv \  # 物种分类映射文件（可选）
-  --itol_labels itol_labels.txt \  # 输出iTOL文本标注文件（可选）
-  --ref_tree reference.nwk \     # 参考树文件（可选）
-  --pruned_pred result.pruned_pred.nwk \  # 裁剪后的预测树文件（可选）
-  --pruned_ref result.pruned_ref.nwk \  # 裁剪后的参考树文件（可选）
+  --data_dir dataset \  # Directory containing .npy files for each sample
+  --out_prefix result \  # Output file prefix
+  --method nj \  # Tree construction method
+  --metric euclidean \  # Distance metric
+  --save_csv \  # Save CSV file (optional)
+  --taxonomy_map taxonomy_map.tsv \  # Taxonomy mapping file (optional)
+  --itol_labels itol_labels.txt \  # Output iTOL text annotation file (optional)
+  --ref_tree reference.nwk \     # Reference tree file (optional)
+  --pruned_pred result.pruned_pred.nwk \  # Pruned predicted tree file (optional)
+  --pruned_ref result.pruned_ref.nwk \  # Pruned reference tree file (optional)
 """

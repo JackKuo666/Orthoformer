@@ -18,7 +18,7 @@ Orthoformer_Phylogeny/
 ├── readme.md                          # This file
 ├── build_tree_from_embeddings.py     # Tree construction from embeddings
 ├── generate_embeddings_cli.py        # Embedding generation utility
-├── pretrainer.py                      # Pretraining utilities
+├── orthoformer_model.py              # Pretraining utilities
 ├── ar53_r226/                         # Orthoformer evaluation project
 │   ├── readme.md                      # Detailed documentation
 │   ├── run.embedding_generate.sh      # Generate embeddings
@@ -134,6 +134,22 @@ CLI tool for generating embeddings:
 - Supports ALiBi positional encoding
 - Batch processing with configurable parameters
 - Multiple output modes (mean pooling, token-level)
+
+## Dataset Download
+
+The required datasets for this project can be downloaded from the Hugging Face repository:
+
+### Phylogeny Dataset
+
+**Download URL:** https://huggingface.co/datasets/jackkuo/Orthoformer/tree/main/Downstream_Tasks_dataset/Phylogeny_dataset
+
+**Dataset Contents:**
+
+- **pathogens_faa.tar.gz**: Compressed file containing pathogen FASTA sequences for phylogenetic analysis
+
+**Note**: 
+- Extract the `pathogens_faa.tar.gz` file after downloading using: `tar -xzf pathogens_faa.tar.gz`
+- Place the downloaded dataset files in the appropriate directories as specified in the subproject documentation.
 
 ## Requirements
 

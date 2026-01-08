@@ -6,17 +6,17 @@ import pandas as pd
 
 def get_simple_metrics(file_path):
     """
-    最简单的关键指标提取
+    Extract simplest key metrics
     """
     df = pd.read_csv(file_path)
     
-    # 直接使用iloc按位置索引，避免列名问题
+    # Use iloc for positional indexing directly to avoid column name issues
     return {
-        'class_0_f1': df.iloc[0, 3],     # 第0行第3列是f1-score
-        'class_1_f1': df.iloc[1, 3],     # 第1行第3列是f1-score
-        'accuracy': df.iloc[2, 1],       # 第2行第1列是accuracy值
-        'macro_f1': df.iloc[3, 3],       # 第3行第3列是macro avg f1
-        'weighted_f1': df.iloc[4, 3]     # 第4行第3列是weighted avg f1
+        'class_0_f1': df.iloc[0, 3],     # Row 0, column 3 is f1-score
+        'class_1_f1': df.iloc[1, 3],     # Row 1, column 3 is f1-score
+        'accuracy': df.iloc[2, 1],       # Row 2, column 1 is accuracy value
+        'macro_f1': df.iloc[3, 3],       # Row 3, column 3 is macro avg f1
+        'weighted_f1': df.iloc[4, 3]     # Row 4, column 3 is weighted avg f1
     }
 
 #metrics = get_simple_metrics(sys.argv[1])
@@ -27,36 +27,36 @@ from pathlib import Path
 
 def get_folders_pathlib(path):
     """
-    使用pathlib获取所有文件夹（推荐方式）
+    Get all folders using pathlib (recommended approach)
     """
     path_obj = Path(path)
     folders = [item.name for item in path_obj.iterdir() if item.is_dir()]
     return folders
-# 使用示例
+# Usage example
 #folders = get_folders_pathlib(".")
 
 
 import argparse
 
 def parse_argv():
-    # 创建 ArgumentParser 对象
-    parser = argparse.ArgumentParser(description='这是一个处理三个参数的示例程序')
-    # 添加三个必需的位置参数
-    parser.add_argument('-i','--input_file', default="embeddings_4000_v1_a2_binary_classification",help='输入文件路径')
-    parser.add_argument('-o','--output_dir', default="binary",help='输出目录路径')
-    parser.add_argument('-e','--embedding_dir', default="embeddings_4000_v1_a2",help='运行模式')
-    parser.add_argument('--force', '-f', action='store_true', default=False, help='强制覆盖已存在文件')
-    # 解析参数
+    # Create ArgumentParser object
+    parser = argparse.ArgumentParser(description='Example program that processes three parameters')
+    # Add three required positional parameters
+    parser.add_argument('-i','--input_file', default="embeddings_4000_v1_a2_binary_classification",help='Input file path')
+    parser.add_argument('-o','--output_dir', default="binary",help='Output directory path')
+    parser.add_argument('-e','--embedding_dir', default="embeddings_4000_v1_a2",help='Run mode')
+    parser.add_argument('--force', '-f', action='store_true', default=False, help='Force overwrite existing files')
+    # Parse arguments
     args = parser.parse_args()
-    # 使用参数
+    # Use arguments
     return args
 
 #    return {
-#        'class_0_f1': df.iloc[0, 3],     # 第0行第3列是f1-score
-#        'class_1_f1': df.iloc[1, 3],     # 第1行第3列是f1-score
-#        'accuracy': df.iloc[2, 1],       # 第2行第1列是accuracy值
-#        'macro_f1': df.iloc[3, 3],       # 第3行第3列是macro avg f1
-#        'weighted_f1': df.iloc[4, 3]     # 第4行第3列是weighted avg f1
+#        'class_0_f1': df.iloc[0, 3],     # Row 0, column 3 is f1-score
+#        'class_1_f1': df.iloc[1, 3],     # Row 1, column 3 is f1-score
+#        'accuracy': df.iloc[2, 1],       # Row 2, column 1 is accuracy value
+#        'macro_f1': df.iloc[3, 3],       # Row 3, column 3 is macro avg f1
+#        'weighted_f1': df.iloc[4, 3]     # Row 4, column 3 is weighted avg f1
 #    }
 
 def get_all_phenotype_binary(folder):

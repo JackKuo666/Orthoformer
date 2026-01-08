@@ -21,7 +21,7 @@ Orthoformer_CRISPR/
 ├── extract_eval_metrics.py           # Extract metrics from training logs
 ├── view_metrics_table.py             # View metrics in formatted table
 ├── analyze_class_imbalance.py        # Analyze class imbalance issues
-├── pretrainer.py                      # Pretraining utilities
+├── orthoformer_model.py              # Pretraining utilities
 ├── CRISPR_datasets/                   # Training datasets
 │   ├── train.dataset                 # Training set
 │   ├── val.dataset                    # Validation set
@@ -46,6 +46,22 @@ Orthoformer_CRISPR/
   - `captum` (optional, for attribution analysis)
 - GPU recommended (multi-GPU supported via torchrun)
 - Pretrained Orthoformer model: `model_3M_2048_v10`
+
+## Dataset Download
+
+The required datasets for this project can be downloaded from the Hugging Face repository:
+
+### CRISPR Dataset
+
+**Download URL:** https://huggingface.co/datasets/jackkuo/Orthoformer/tree/main/Downstream_Tasks_dataset/CRISPR_datasets
+
+**Dataset Contents:**
+
+- **CRISPR_datasets.tar.gz**: Compressed file containing CRISPR training, validation, and test datasets
+
+**Note**: 
+- Extract the `CRISPR_datasets.tar.gz` file after downloading using: `tar -xzf CRISPR_datasets.tar.gz`
+- Place the extracted dataset files in the `CRISPR_datasets/` directory as specified in the workflow section.
 
 ## Workflow
 

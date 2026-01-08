@@ -32,6 +32,21 @@ Orthoformer_eval/
 └── sampled_genomes.all.txt  # List of sampled genome IDs
 ```
 
+## Dataset
+
+The evaluation dataset is available on Hugging Face:
+
+**Dataset Link**: [https://huggingface.co/datasets/jackkuo/Orthoformer/tree/main/Orthoformer_eval_dataset](https://huggingface.co/datasets/jackkuo/Orthoformer/tree/main/Orthoformer_eval_dataset)
+
+The dataset contains the following files:
+
+- `CNGBdb_dataset.tar.gz` - HuggingFace dataset for Orthoformer embedding generation
+- `CNGBdb_faa.tar.gz` - Protein sequence files (*.faa) for BacFormer evaluation
+- `CNGBdb_fna.tar.gz` - Genome sequence files (*.fna) for Evo-1 evaluation
+- `CNGBdb_gtdbtkR226.csv` - GTDB-Tk R226 taxonomy annotations
+
+After downloading, extract the tar.gz files to the appropriate directories as shown in the Directory Structure section above.
+
 ## Scripts
 
 ### 1. Embedding Generation
@@ -152,13 +167,15 @@ python scripts/s6_generate_additional_visualizations.py
 
 ## Quick Start
 
-1. **Prepare data**: Ensure genome sequences (`.fna` files) and/or protein sequences (`.faa` files) are in the appropriate directories.
+1. **Download dataset**: Download the evaluation dataset from [Hugging Face](https://huggingface.co/datasets/jackkuo/Orthoformer/tree/main/Orthoformer_eval_dataset) and extract the tar.gz files to the appropriate directories.
 
-2. **Generate embeddings**: Run the embedding generation scripts for each model you want to evaluate.
+2. **Prepare data**: Ensure genome sequences (`.fna` files) and/or protein sequences (`.faa` files) are in the appropriate directories.
 
-3. **Compare models**: Run comparison scripts to evaluate model performance.
+3. **Generate embeddings**: Run the embedding generation scripts for each model you want to evaluate.
 
-4. **Visualize results**: Generate visualizations for analysis.
+4. **Compare models**: Run comparison scripts to evaluate model performance.
+
+5. **Visualize results**: Generate visualizations for analysis.
 
 ## Notes
 

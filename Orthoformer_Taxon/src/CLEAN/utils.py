@@ -59,17 +59,17 @@ def get_ec_id_dict_non_prom_without_label(found_csv: str):
       ec_id: {}  (no EC info available)
     """
     try:
-        # 尝试读取文件并查看第一行
+        # Try to read file and check first line
         with open(found_csv, 'r') as f:
             first_line = f.readline().strip()
         
-        # 如果第一行包含复杂的header结构
+        # If first line contains complex header structure
         if 'Entry' in first_line and '\t' in first_line:
             df = pd.read_csv(found_csv, skiprows=1, header=None, names=['combined_data'])
-            # 提取Entry ID（第一个tab分隔的部分）
+            # Extract Entry ID (first tab-separated part)
             entries = df['combined_data'].dropna().astype(str).str.split('\t').str[0].unique()
         else:
-            # 正常读取
+            # Normal read
             df = pd.read_csv(found_csv)
             if 'Entry' in df.columns:
                 entries = df['Entry'].dropna().astype(str).unique()

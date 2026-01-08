@@ -130,7 +130,7 @@ def infer_maxsep(train_data, test_data, report_metrics = False,
              f'| acc: {acc:.3}')
         print('-' * 75)
 
-         # 创建指标字典
+         # Create metrics dictionary
         metrics_dict = {
             'train_data': train_data,
             'test_data': test_data,
@@ -146,7 +146,7 @@ def infer_maxsep(train_data, test_data, report_metrics = False,
             'gmm_used': gmm is not None
         }
         
-        # 保存指标到CSV文件
+        # Save metrics to CSV file
         metrics_filename = f"results/metrics_{train_data}_{test_data}.csv"
         ensure_dirs("./results")
         
@@ -158,19 +158,19 @@ def infer_maxsep(train_data, test_data, report_metrics = False,
         else:
             pd.DataFrame([metrics_dict]).to_csv(metrics_filename, index=False)
         
-        # 保存所有预测结果的详细信息
+        # Save detailed prediction results
         all_predictions_df = save_detailed_predictions(pred_label, true_label, pred_probs, 
                                                       id_ec_test, train_data, test_data)
         
-        # 分别保存精确匹配和所有正确预测（精确匹配+部分匹配）
+        # Save exact matches and all correct predictions (exact matches + partial matches) separately
         exact_matches_df, all_correct_df = save_separate_match_files(all_predictions_df, train_data, test_data)
         
-        # 同时保存错误预测的样本用于分析
+        # Also save wrong predictions for analysis
         wrong_predictions_df = all_predictions_df[all_predictions_df['correct'] == False]
         wrong_filename = f"results/wrong_predictions_{train_data}_{test_data}.csv"
         wrong_predictions_df.to_csv(wrong_filename, index=False)
         
-        # 统计匹配类型
+        # Count match types
         exact_matches_count = len(exact_matches_df)
         partial_matches_count = len(all_correct_df) - exact_matches_count
         all_correct_count = len(all_correct_df)
@@ -196,35 +196,35 @@ def infer_maxsep(train_data, test_data, report_metrics = False,
 
 def save_separate_match_files(all_predictions_df, train_data, test_data):
     """
-    分别保存精确匹配和所有正确预测到不同的CSV文件
-    对于部分匹配的样本，保留所有预测结果
+    Save exact matches and all correct predictions to different CSV files
+    For partially matched samples, keep all prediction results
     """
-    # 提取精确匹配的样本（match_type == 'exact'）
+    # Extract exact match samples (match_type == 'exact')
     exact_matches_df = all_predictions_df[all_predictions_df['match_type'] == 'exact'].copy()
     exact_filename = f"results/exact_matches_{train_data}_{test_data}.csv"
     exact_matches_df.to_csv(exact_filename, index=False)
     
-    # 提取所有正确预测的样本（包括精确匹配和部分匹配）
+    # Extract all correct prediction samples (including exact matches and partial matches)
     all_correct_df = all_predictions_df[all_predictions_df['correct'] == True].copy()
     
-    # 对于部分匹配的样本，添加匹配的EC信息
+    # Add matched EC information for partially matched samples
     all_correct_df = add_matched_ec_info(all_correct_df)
     
     all_correct_filename = f"results/all_correct_predictions_{train_data}_{test_data}.csv"
     all_correct_df.to_csv(all_correct_filename, index=False)
     
-    print(f"精确匹配样本保存到: {exact_filename} ({len(exact_matches_df)} 个样本)")
-    print(f"所有正确预测样本保存到: {all_correct_filename} ({len(all_correct_df)} 个样本)")
+    print(f"Exact match samples saved to: {exact_filename} ({len(exact_matches_df)} samples)")
+    print(f"All correct prediction samples saved to: {all_correct_filename} ({len(all_correct_df)} samples)")
     
     return exact_matches_df, all_correct_df
 
 def add_matched_ec_info(df):
     """
-    为部分匹配的样本添加匹配的EC信息
+    Add matched EC information for partially matched samples
     """
     result_df = df.copy()
     
-    # 添加新列来存储匹配的EC
+    # Add new columns to store matched ECs
     result_df['matched_ec'] = ''
     result_df['all_predicted_ecs'] = ''
     result_df['matching_ecs'] = ''
@@ -233,18 +233,18 @@ def add_matched_ec_info(df):
         pred_ec = row['predicted_ec']
         true_ec = row['true_ec']
         
-        # 解析预测EC和真实EC为列表
+        # Parse predicted EC and true EC as lists
         pred_list = parse_ec_string(pred_ec)
         true_list = parse_ec_string(true_ec)
         
-        # 存储所有预测的EC
+        # Store all predicted ECs
         result_df.at[idx, 'all_predicted_ecs'] = ';'.join(pred_list)
         
-        # 找出匹配的EC
+        # Find matched ECs
         matched_ecs = list(set(pred_list) & set(true_list))
         result_df.at[idx, 'matching_ecs'] = ';'.join(matched_ecs)
         
-        # 如果有多个匹配的EC，取第一个作为主要匹配
+        # If there are multiple matched ECs, take the first as the primary match
         if matched_ecs:
             result_df.at[idx, 'matched_ec'] = matched_ecs[0]
     
@@ -252,20 +252,20 @@ def add_matched_ec_info(df):
 
 def parse_ec_string(ec_string):
     """
-    解析EC字符串为列表
-    处理各种格式：字符串、列表字符串等
+    Parse EC string to list
+    Handle various formats: string, list string, etc.
     """
     if pd.isna(ec_string) or ec_string == '':
         return []
     
-    # 如果已经是列表，直接返回
+    # If already a list, return directly
     if isinstance(ec_string, list):
         return [str(ec) for ec in ec_string]
     
-    # 转换为字符串
+    # Convert to string
     ec_str = str(ec_string)
     
-    # 处理不同的分隔符
+    # Handle different separators
     if ';' in ec_str:
         return [ec.strip() for ec in ec_str.split(';') if ec.strip()]
     elif ',' in ec_str:
@@ -273,10 +273,10 @@ def parse_ec_string(ec_string):
     elif ' ' in ec_str and len(ec_str.split()) > 1:
         return [ec.strip() for ec in ec_str.split() if ec.strip()]
     else:
-        # 尝试解析类似 "['1883', '2995706']" 的字符串
+        # Try to parse strings like "['1883', '2995706']"
         if ec_str.startswith('[') and ec_str.endswith(']'):
             try:
-                # 使用ast安全解析
+                # Use ast for safe parsing
                 import ast
                 parsed_list = ast.literal_eval(ec_str)
                 if isinstance(parsed_list, list):
@@ -284,7 +284,7 @@ def parse_ec_string(ec_string):
             except:
                 pass
         
-        # 如果无法解析为列表，返回单个元素的列表
+        # If cannot parse as list, return single-element list
         return [ec_str]
 
 def save_detailed_predictions(pred_labels, true_labels, pred_probs, id_ec_test, train_data, test_data):
@@ -469,7 +469,7 @@ def infer_maxsep_from_embeddings(train_data, test_data, report_metrics=False,
         pre, rec, f1, roc, acc = get_eval_metrics(
             pred_label, pred_probs, true_label, all_label)
         
-        # 创建指标字典
+        # Create metrics dictionary
         metrics_dict = {
             'train_data': train_data,
             'test_data': test_data,
@@ -485,11 +485,11 @@ def infer_maxsep_from_embeddings(train_data, test_data, report_metrics=False,
             'gmm_used': gmm is not None
         }
         
-        # 保存指标到CSV文件
+        # Save metrics to CSV file
         metrics_filename = f"results/metrics_{train_data}_{test_data}.csv"
         ensure_dirs("./results")
         
-        # 检查文件是否存在，如果存在则追加，否则创建新文件
+        # Check if file exists, append if exists, otherwise create new file
         if os.path.exists(metrics_filename):
             existing_df = pd.read_csv(metrics_filename)
             new_df = pd.DataFrame([metrics_dict])
@@ -498,16 +498,16 @@ def infer_maxsep_from_embeddings(train_data, test_data, report_metrics=False,
         else:
             pd.DataFrame([metrics_dict]).to_csv(metrics_filename, index=False)
         
-        # 保存所有预测结果的详细信息
+        # Save detailed prediction results
         all_predictions_df = save_detailed_predictions(pred_label, true_label, pred_probs, 
                                                       id_ec_test, train_data, test_data)
         
-        # 从所有预测中提取正确预测的样本
+        # Extract correct prediction samples from all predictions
         correct_predictions_df = all_predictions_df[all_predictions_df['correct'] == True]
         correct_filename = f"results/correct_predictions_{train_data}_{test_data}.csv"
         correct_predictions_df.to_csv(correct_filename, index=False)
         
-        # 同时保存错误预测的样本用于分析
+        # Also save wrong prediction samples for analysis
         wrong_predictions_df = all_predictions_df[all_predictions_df['correct'] == False]
         wrong_filename = f"results/wrong_predictions_{train_data}_{test_data}.csv"
         wrong_predictions_df.to_csv(wrong_filename, index=False)

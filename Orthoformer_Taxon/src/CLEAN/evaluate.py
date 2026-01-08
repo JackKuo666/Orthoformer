@@ -10,7 +10,7 @@ from tqdm import tqdm
 import numpy as np
 
 
-#这个函数的核心作用是 计算最大分离点，即通过计算每个基因组距离的分离度（sep_lst）和梯度（sep_grad），并根据用户提供的模式（first_grad 和 use_max_grad）来决定最大分离点的选择方式。如果没有显著的分离度变化（大梯度），则选择第一个基因组。
+# The core function of this function is to calculate the maximum separation point by computing the separation degree (sep_lst) and gradient (sep_grad) of each genome distance, and decide the selection method of the maximum separation point based on the user-provided mode (first_grad and use_max_grad). If there is no significant separation change (large gradient), select the first genome.
 # def maximum_separation(dist_lst, first_grad, use_max_grad):
 #     opt = 0 if first_grad else -1
 #     gamma = np.append(dist_lst[1:], np.repeat(dist_lst[-1], 10))
@@ -31,47 +31,47 @@ import numpy as np
 
 def decide_unknown(
     dist_lst,
-    distance_threshold=None,      # 距离阈值：与最近EC的距离若仍“很大” -> UNKNOWN
-    sep_threshold=None,           # 分离度阈值：|s0 - gamma| 若“很小”（像噪声）-> UNKNOWN
-    margin_threshold=None,        # 边际阈值：s1 - s0 若“很小”（无明显分界）-> UNKNOWN
-    gmm_path=None,                # 可选：用训练时拟合的GMM来给出置信度
-    gmm_conf_threshold=None       # 若均值置信度 < 阈值 -> UNKNOWN
+    distance_threshold=None,      # Distance threshold: if distance to nearest EC is still "large" -> UNKNOWN
+    sep_threshold=None,           # Separation threshold: if |s0 - gamma| is "small" (like noise) -> UNKNOWN
+    margin_threshold=None,        # Margin threshold: if s1 - s0 is "small" (no clear boundary) -> UNKNOWN
+    gmm_path=None,                # Optional: use GMM fitted during training to provide confidence
+    gmm_conf_threshold=None       # If mean confidence < threshold -> UNKNOWN
 ):
     # """
-    # 基于多种信号做开集（UNKNOWN）判定，任一触发即返回 True。
-    # dist_lst：该样本到各EC簇的前K个（已升序）距离，如 nsmallest(10)
+    # Make open-set (UNKNOWN) decision based on multiple signals, return True if any is triggered.
+    # dist_lst: top K (ascending) distances from this sample to each EC cluster, e.g. nsmallest(10)
     # """
     if len(dist_lst) == 0:
-        return True  # 没有候选，直接UNKNOWN
+        return True  # No candidates, directly UNKNOWN
 
     s0 = dist_lst[0]
-    # 背景噪声距离 gamma：与原文一致，用 s[1:] 的均值（最后元素repeat在 maximum_separation 内部已处理）
+    # Background noise distance gamma: consistent with original, use mean of s[1:] (last element repeat handled inside maximum_separation)
     gamma = np.mean(dist_lst[1:]) if len(dist_lst) > 1 else dist_lst[0]
-    sep0 = abs(s0 - gamma)                # 最近簇相对噪声的分离度
-    margin01 = (dist_lst[1] - s0) if len(dist_lst) > 1 else np.inf  # 前两者间距
+    sep0 = abs(s0 - gamma)                # Separation degree of nearest cluster relative to noise
+    margin01 = (dist_lst[1] - s0) if len(dist_lst) > 1 else np.inf  # Distance between first two
 
-    # 1) 距离阈值：最近距离仍很大，说明“不像任何已知簇”
+    # 1) Distance threshold: nearest distance is still large, means "unlike any known cluster"
     if (distance_threshold is not None) and (s0 > distance_threshold):
         return True
 
-    # 2) 分离度阈值：最近点离噪声太近，说明“像噪声”
+    # 2) Separation threshold: nearest point too close to noise, means "like noise"
     if (sep_threshold is not None) and (sep0 < sep_threshold):
         return True
 
-    # 3) 边际阈值：没有明显拐点/分界，可能不可靠
+    # 3) Margin threshold: no clear inflection point/boundary, may be unreliable
     if (margin_threshold is not None) and (margin01 < margin_threshold):
         return True
 
-    # 4) GMM 置信度：把距离映射为“像已知类”的置信度（你已有 infer_confidence_gmm）
+    # 4) GMM confidence: map distance to confidence of "like known class" (you already have infer_confidence_gmm)
     if (gmm_path is not None) and (gmm_conf_threshold is not None):
         gmm_lst = pickle.load(open(gmm_path, 'rb'))
         from math import isnan
         try:
             from __main__ import infer_confidence_gmm
         except ImportError:
-            # 如果 infer_confidence_gmm 在其他模块，请按需导入
+            # If infer_confidence_gmm is in another module, import as needed
             pass
-        conf = infer_confidence_gmm(s0, gmm_lst)  # 越大越像“已知”
+        conf = infer_confidence_gmm(s0, gmm_lst)  # Larger means more "known-like"
         if (conf is None) or isnan(conf) or (conf < gmm_conf_threshold):
             return True
 
@@ -79,7 +79,7 @@ def decide_unknown(
 
 def maximum_separation(dist_lst, first_grad, use_max_grad):
     opt = 0 if first_grad else -1
-    # 与之前一致的 gamma 近似：把末尾重复延长，稳定均值
+    # Consistent gamma approximation: extend end repetition to stabilize mean
     gamma_vec = np.append(dist_lst[1:], np.repeat(dist_lst[-1], 10)) if len(dist_lst) > 1 else np.array([dist_lst[0]])
     sep_lst = np.abs(dist_lst - np.mean(gamma_vec))
     sep_grad = np.abs(sep_lst[:-1] - sep_lst[1:]) if len(sep_lst) > 1 else np.array([0.0])
@@ -93,7 +93,7 @@ def maximum_separation(dist_lst, first_grad, use_max_grad):
         else:
             max_sep_i = int(large_grads[opt])
 
-    # 没有合理拐点时回退
+    # Fallback when no reasonable inflection point
     if max_sep_i >= 5:
         max_sep_i = 0
     return max_sep_i
@@ -113,22 +113,22 @@ def maximum_separation(dist_lst, first_grad, use_max_grad):
 #     known_classes=None
 # ):
 #     # """
-#     # 在原有最大分离基础上，加入开集识别（UNKNOWN）：
-#     #   - 若触发 decide_unknown 的任一条件 -> 该样本写入 'EC:UNKNOWN/<score>'。
-#     #   - 否则按最大分离索引写入 EC 候选。
+#     # Based on maximum separation, add open-set recognition (UNKNOWN):
+#     #   - If any condition in decide_unknown is triggered -> write this sample as 'EC:UNKNOWN/<score>'.
+#     #   - Otherwise, write EC candidates according to maximum separation index.
 #     # """
 #     with open(csv_name + '_maxsep.csv', 'w', newline='') as out_file:
 #         csvwriter = csv.writer(out_file, delimiter=',')
 
 #         for col in df.columns:
-#             row_cells = [col]  # 第一列写样本ID
+#             row_cells = [col]  # First column is sample ID
 
-#             # 取前10个最小距离
+#             # Get top 10 smallest distances
 #             smallest_10 = df[col].nsmallest(10)
-#             dist_lst = list(smallest_10.values)  # 距离数组（升序）
-#             idx_lst  = list(smallest_10.index)   # 对应EC编号
+#             dist_lst = list(smallest_10.values)  # Distance array (ascending)
+#             idx_lst  = list(smallest_10.index)   # Corresponding EC numbers
 
-#             # 开集判定（可选）
+#             # Open-set decision (optional)
 #             is_unknown = False
 #             if open_set:
 #                 is_unknown = decide_unknown(
@@ -141,35 +141,35 @@ def maximum_separation(dist_lst, first_grad, use_max_grad):
 #                 )
 
 #             if is_unknown:
-#                 # 你希望在 UNKNOWN 后面写的“分数”可以用：
-#                 #   1) 最近距离 s0
-#                 #   2) 分离度 sep0=|s0-gamma|
-#                 #   3) 或者 GMM 置信度（若提供）
+#                 # The "score" you want to write after UNKNOWN can be:
+#                 #   1) Nearest distance s0
+#                 #   2) Separation degree sep0=|s0-gamma|
+#                 #   3) Or GMM confidence (if provided)
 #                 s0 = dist_lst[0] if len(dist_lst) else float('nan')
 #                 # if (gmm is not None) and (gmm_conf_threshold is not None) and len(dist_lst):
 #                 #     gmm_lst = pickle.load(open(gmm, 'rb'))
-#                 #     score = infer_confidence_gmm(s0, gmm_lst)  # 置信度
+#                 #     score = infer_confidence_gmm(s0, gmm_lst)  # Confidence
 #                 # else:
-#                 #     # 用分离度作为分数：越小越“像噪声”
+#                 #     # Use separation degree as score: smaller means more "noise-like"
 #                 #     gamma = np.mean(dist_lst[1:]) if len(dist_lst) > 1 else s0
 #                 #     score = abs(s0 - gamma)
 #                 row_cells.append('EC:UNKNOWN/' + f'{s0:.4f}')
 #                 csvwriter.writerow(row_cells)
 #                 continue
 
-#             # 未判为 UNKNOWN，则做最大分离并写入前 max_sep_i+1 个候选
+#             # If not judged as UNKNOWN, perform maximum separation and write top max_sep_i+1 candidates
 #             max_sep_i = maximum_separation(dist_lst, first_grad, use_max_grad)
 
 #             for i in range(max_sep_i + 1):
 #                 EC_i = idx_lst[i]
 #                 dist_i = dist_lst[i]
 
-#                 # 仍可保留“白名单已知类，否则 UNKNOWN”的策略（可选）
+#                 # Can still keep the "whitelist known classes, otherwise UNKNOWN" strategy (optional)
 #                 label = EC_i
 #                 if (known_classes is not None) and (EC_i not in known_classes):
 #                     label = 'UNKNOWN'
 
-#                 # 若提供 gmm ，可把距离转成置信度（覆盖 dist_i）
+#                 # If gmm is provided, convert distance to confidence (overwrite dist_i)
 #                 if gmm is not None and gmm_conf_threshold is None:
 #                     gmm_lst = pickle.load(open(gmm, 'rb'))
 #                     dist_i = infer_confidence_gmm(dist_i, gmm_lst)
@@ -187,10 +187,10 @@ def maximum_separation(dist_lst, first_grad, use_max_grad):
 #     :param distance_threshold: Threshold for considering a sample as 'UNKNOWN'.
 #     :return: Index of maximum separation or 'UNKNOWN' based on threshold.
 #     """
-#     # 设定一个距离阈值
-#     # distance_threshold = 0.8  # 仅当距离低于 distance_threshold 时认为是已知类别
+#     # Set a distance threshold
+#     # distance_threshold = 0.8  # Only consider as known class when distance is below distance_threshold
 #     # dist_i = dist_lst[0]
-#     # if dist_i > distance_threshold:  # 判断距离是否符合阈值
+#     # if dist_i > distance_threshold:  # Check if distance meets threshold
 #     #     return  'UNKNOWN'
     
 #     max_sep_i = maximum_separation(dist_lst, first_grad, use_max_grad)

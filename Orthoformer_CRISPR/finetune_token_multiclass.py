@@ -35,10 +35,10 @@ class TokenClsCfg:
     train_dataset: str
     val_dataset: str
     test_dataset: str
-    pretrained_dir: str                # 你的 pretrainer.py 保存的 final_model/
+    pretrained_dir: str                # Path to the final_model/ directory saved by pretrain
     output_dir: str = "token_multiclass_run"
     max_length: int = 2048
-    num_labels: int = 8                # 你的类别数 0..(C-1)
+    num_labels: int = 8                # Number of classes 0..(C-1)
 
     # head options
     head: str = "bilstm"               # mlp | bilstm | cnn
@@ -50,9 +50,9 @@ class TokenClsCfg:
     # loss options
     loss_type: str = "focal"           # cross_entropy | focal
     focal_gamma: float = 2.0
-    focal_alpha: Optional[List[float]] = None    # 长度=num_labels，类权重α，可空
-    class_counts: Optional[Dict[int, int]] = None  # 各类样本数，用于 class_weights
-    compute_class_counts: bool = False            # 若未提供 counts，可自动遍历统计
+    focal_alpha: Optional[List[float]] = None    # Length=num_labels, class weight α, optional
+    class_counts: Optional[Dict[int, int]] = None  # Sample counts per class, used for class_weights
+    compute_class_counts: bool = False            # If counts not provided, automatically scan and compute
 
     # training
     per_device_train_batch_size: int = 4
@@ -68,7 +68,7 @@ class TokenClsCfg:
     eval_strategy: str = "steps"  # "steps" or "epoch"
     save_total_limit: int = 3
     load_best_model_at_end: bool = True
-    metric_for_best_model: str = "eval_f1_macro"  # 使用 macro F1 更关注少数类
+    metric_for_best_model: str = "eval_f1_macro"  # Use macro F1 to focus more on minority classes
     greater_is_better: bool = True
     fp16: bool = False
     deepspeed: Optional[str] = None
@@ -105,16 +105,16 @@ def load_model_with_alibi(model_dir, device, use_alibi=True):
         
         # Manually apply ALiBi positional encoding
         try:
-            from pretrainer import CustomBertSelfAttention
+            from orthoformer_model import OrthoformerSelfAttention
             print("[Info] Applying ALiBi positional encoding to attention layers...")
             num_layers_replaced = 0
             for layer in model.encoder.layer:
                 orig_sa = layer.attention.self
-                # Check if already CustomBertSelfAttention
-                if isinstance(orig_sa, CustomBertSelfAttention):
-                    print(f"[Info] Layer {num_layers_replaced + 1} already has CustomBertSelfAttention")
+                # Check if already OrthoformerSelfAttention
+                if isinstance(orig_sa, OrthoformerSelfAttention):
+                    print(f"[Info] Layer {num_layers_replaced + 1} already has OrthoformerSelfAttention")
                 else:
-                    layer.attention.self = CustomBertSelfAttention(
+                    layer.attention.self = OrthoformerSelfAttention(
                         orig_sa,
                         pos_kind="alibi",
                         max_position_embeddings=model.config.max_position_embeddings
@@ -122,7 +122,7 @@ def load_model_with_alibi(model_dir, device, use_alibi=True):
                 num_layers_replaced += 1
             print(f"[Info] Successfully applied ALiBi to {num_layers_replaced} attention layers")
         except ImportError as e:
-            print(f"[Warn] Failed to import CustomBertSelfAttention: {e}")
+            print(f"[Warn] Failed to import OrthoformerSelfAttention: {e}")
             print("[Warn] Model will use standard attention (ALiBi functionality disabled)")
         except Exception as e:
             print(f"[Warn] Failed to apply ALiBi: {e}")
@@ -131,7 +131,7 @@ def load_model_with_alibi(model_dir, device, use_alibi=True):
         print("\n[Info] Loading model with standard positional encoding...")
         model = BertModel.from_pretrained(model_dir)
     
-    # 移动到指定设备，保持训练模式（Trainer会在需要时切换train/eval模式）
+    # Move to specified device, keep training mode (Trainer will switch train/eval mode as needed)
     model = model.to(device)
     return model
 
@@ -143,11 +143,11 @@ def ensure_multiclass_dense(
     ds: Dataset, max_length: int, pad_token_id: int = 0, ignore_index: int = -100, cls_sep_ignore: bool = True
 ) -> Dataset:
     """
-    期望列：
+    Expected columns:
       - input_ids: List[int]
-      - labels:    List[int]  (或 'labels_ids'；二者其一). 每个 token 一个类别 id（0..C-1）
-    若 len(labels) == len(input_ids)-2 -> 视为缺少 CLS/SEP，在两端插入 ignore_index。
-    对 PAD 补到 max_length，PAD 位置标签置为 ignore_index。
+      - labels:    List[int]  (or 'labels_ids'; either one). One class id per token (0..C-1)
+    If len(labels) == len(input_ids)-2 -> treat as missing CLS/SEP, insert ignore_index at both ends.
+    Pad to max_length for PAD tokens, set labels to ignore_index at PAD positions.
     """
     cols = ds.column_names
     if "input_ids" not in cols:
@@ -159,19 +159,19 @@ def ensure_multiclass_dense(
     def _proc(ex: Dict[str, Any]) -> Dict[str, Any]:
         ids = ex["input_ids"]
         labs = ex[src]
-        # 只训练 input_ids[1:-1]
+        # Only train on input_ids[1:-1] (excluding CLS/SEP)
         ids = ids[1:-1]
         L_ids, L_lab = len(ids), len(labs)
 
-        # CLs/SEP 情况：如果labels原本就只对中间部分标注（等长），直接对齐；否则冗余/缺失都纠正为对齐长度
+        # CLS/SEP case: If labels originally only label the middle part (same length), align directly; otherwise fix redundancy/missing to align length
         if L_lab != L_ids:
-            # 裁剪或填充到与 ids 等长；缺失部位填 ignore_index
+            # Truncate or pad to same length as ids; fill missing parts with ignore_index
             if L_lab > L_ids:
                 labs = labs[:L_ids]
             else:
                 labs = labs + [ignore_index] * (L_ids - L_lab)
 
-        # 截断到 max_length
+        # Truncate to max_length
         L = min(L_ids, max_length)
         ids = ids[:L]
         labs = labs[:L]
@@ -196,8 +196,8 @@ def ensure_multiclass_dense(
 
 class SoftmaxFocalLoss(nn.Module):
     """
-    多类别 Focal Loss (per-token)，输入 logits:[B,L,C], target:[B,L] in {0..C-1} or ignore_index.
-    公式：FL = - α_y * (1 - p_y)^γ * log(p_y)
+    Multiclass Focal Loss (per-token), input logits:[B,L,C], target:[B,L] in {0..C-1} or ignore_index.
+    Formula: FL = - α_y * (1 - p_y)^γ * log(p_y)
     """
     def __init__(self, num_classes: int, gamma: float = 2.0, alpha: Optional[List[float]] = None,
                  ignore_index: int = -100, reduction: str = "mean"):
@@ -305,16 +305,16 @@ class BertForTokenMulticlass(nn.Module):
                  class_weights: Optional[List[float]] = None,
                  ignore_index: int = -100):
         super().__init__()
-        # 迁移 encoder
-        # 延迟设备分配：先加载模型到CPU，Trainer会自动移动到正确的设备
-        device = torch.device('cpu')  # 初始加载到CPU，Trainer会处理设备分配
+        # Transfer encoder
+        # Delayed device allocation: load model to CPU first, Trainer will move to correct device automatically
+        device = torch.device('cpu')  # Initial load to CPU, Trainer will handle device allocation
         self.bert = load_model_with_alibi(mlm_dir, device, use_alibi=True)
-        # 从BERT config获取hidden_size（用于分类头的输入维度）
+        # Get hidden_size from BERT config (for classification head input dimension)
         self.hidden = cfg.hidden_size
         self.num_labels = num_labels
         self.ignore_index = ignore_index
 
-        # 选择分类头
+        # Select classification head
         head_type = head_type.lower()
         if head_type == "mlp":
             self.head = MLPHead(self.hidden, hidden_size, num_labels, dropout)
@@ -325,7 +325,7 @@ class BertForTokenMulticlass(nn.Module):
         else:
             raise ValueError(f"Unknown head: {head_type}")
 
-        # 损失
+        # Loss
         self.loss_type = loss_type.lower()
         if self.loss_type == "focal":
             self.crit = SoftmaxFocalLoss(num_classes=num_labels, gamma=focal_gamma, alpha=focal_alpha,
@@ -336,7 +336,7 @@ class BertForTokenMulticlass(nn.Module):
         else:
             raise ValueError(f"Unknown loss_type: {loss_type}")
 
-        # 对于 focal，我们也支持叠加 class_weights：在 compute_loss 中处理（乘到逐类 logit 概率上不直观）
+        # For focal loss, we also support adding class_weights: handled in compute_loss (multiplying to per-class logit probabilities is not intuitive)
         self.class_weights = None
         if class_weights is not None and self.loss_type == "focal":
             self.class_weights = torch.tensor(class_weights, dtype=torch.float32)  # [C]
@@ -349,7 +349,7 @@ class BertForTokenMulticlass(nn.Module):
             if self.loss_type == "cross_entropy":
                 loss = self.crit(logits.view(-1, self.num_labels), labels.view(-1).long())
             else:
-                # focal：先算 focal，再叠加可选 class_weights（按真实类加权）
+                # focal: compute focal first, then add optional class_weights (weighted by true class)
                 B, L, C = logits.shape
                 valid = labels.ne(self.ignore_index)  # [B,L]
                 if valid.sum() == 0:
@@ -359,16 +359,16 @@ class BertForTokenMulticlass(nn.Module):
                     if self.class_weights is None:
                         loss = loss_focal
                     else:
-                        # 改进：在每个样本上应用类别权重，而不是简单的平均
-                        # 这样可以更好地处理类别不平衡
+                        # Improvement: apply class weights per sample instead of simple averaging
+                        # This better handles class imbalance
                         with torch.no_grad():
                             cls = labels[valid].view(-1)  # [N]
                         cw = self.class_weights.to(logits.device).gather(0, cls)  # [N]
-                        # 方法1: 使用加权平均（更直接有效）
-                        # 计算每个样本的 focal loss，然后按类别权重加权
-                        # 由于 focal loss 已经是 mean，我们需要重新计算逐样本的 loss
-                        # 简化方案：使用加权平均，权重为类别权重的平方根（更稳定）
-                        cw_normalized = cw / (cw.mean() + 1e-8)  # 归一化到均值附近
+                        # Method 1: Use weighted average (more direct and effective)
+                        # Compute focal loss per sample, then weight by class weights
+                        # Since focal loss is already mean, we need to recompute per-sample loss
+                        # Simplified approach: use weighted average, weights are square root of class weights (more stable)
+                        cw_normalized = cw / (cw.mean() + 1e-8)  # Normalize to around mean
                         loss = loss_focal * cw_normalized.mean()
         return {"loss": loss, "logits": logits}
 
@@ -449,7 +449,7 @@ def multiclass_token_metrics(eval_pred, ignore_index: int = -100, num_labels: Op
 # ======================
 
 def counts_to_weights(counts: Dict[int, int], num_labels: int) -> List[float]:
-    # 防御性：缺失的类别给最小非零计数
+    # Defensive: assign minimum non-zero count to missing classes
     arr = np.zeros(num_labels, dtype=np.float64)
     for k, v in counts.items():
         if 0 <= int(k) < num_labels:
@@ -495,25 +495,25 @@ def train_token_multiclass(cfg: TokenClsCfg):
         except Exception:
             pad_id = 0
 
-    # 读数据
+    # Load data
     train_raw = load_from_disk(cfg.train_dataset)
     val_raw = load_from_disk(cfg.val_dataset)
     test_raw = load_from_disk(cfg.test_dataset)
 
-    # 预处理（裁掉 CLS/SEP，pad到 max_length，labels 用 ignore_index 覆盖 PAD）
+    # Preprocess (remove CLS/SEP, pad to max_length, set labels to ignore_index for PAD positions)
     ds = DatasetDict({
         "train": ensure_multiclass_dense(train_raw, cfg.max_length, pad_id, cfg.ignore_index),
         "validation": ensure_multiclass_dense(val_raw, cfg.max_length, pad_id, cfg.ignore_index),
         "test": ensure_multiclass_dense(test_raw, cfg.max_length, pad_id, cfg.ignore_index),
     })
 
-    # 类别权重：优先使用用户提供的 counts，否则可选自动统计
+    # Class weights: prefer user-provided counts, otherwise optionally auto-compute
     class_weights = None
     if cfg.class_counts is not None:
         class_weights = counts_to_weights(cfg.class_counts, cfg.num_labels)
         print("[info] use provided class_counts -> class_weights:", class_weights)
     elif cfg.compute_class_counts:
-        # 从 train/val/test 全量扫描（或仅 train，按需即可）
+        # Scan all from train/val/test (or just train, as needed)
         counts_train = scan_counts(ds["train"], cfg.num_labels, cfg.ignore_index)
         counts_val = scan_counts(ds["validation"], cfg.num_labels, cfg.ignore_index)
         counts_test = scan_counts(ds["test"], cfg.num_labels, cfg.ignore_index)
@@ -528,22 +528,22 @@ def train_token_multiclass(cfg: TokenClsCfg):
     print("[info] Multi-GPU is enabled via torch.distributed when launched with torchrun/accelerate.")
 
     # Optional: normalize class weights for stability
-    # 注意：对于极度不平衡的数据，完全归一化可能不够强
-    # 可以使用平方根归一化或部分归一化
+    # Note: For extremely imbalanced data, full normalization may not be strong enough
+    # Can use square root normalization or partial normalization
     if class_weights is not None:
         _cw = np.array(class_weights, dtype=np.float32)
         _m = float(_cw.mean()) if _cw.size > 0 else 1.0
         if _m > 0:
-            # 选项1: 完全归一化（当前，可能不够强）
+            # Option 1: Full normalization (current, may not be strong enough)
             # class_weights = (_cw / _m).tolist()
-            # 选项2: 平方根归一化（更温和，保留更多权重差异）
+            # Option 2: Square root normalization (gentler, preserves more weight differences)
             class_weights = (np.sqrt(_cw / _m) * np.sqrt(_m)).tolist()
-            # 选项3: 不归一化（最激进，但可能不稳定）
+            # Option 3: No normalization (most aggressive, but may be unstable)
             # class_weights = _cw.tolist()
             print("[info] normalized class_weights (sqrt normalization):", class_weights)
             print("[info] original class_weights (for reference):", _cw.tolist())
 
-    # 模型
+    # Model
     base_cfg = BertConfig.from_pretrained(cfg.pretrained_dir)
     model = BertForTokenMulticlass(
         base_cfg, cfg.num_labels, cfg.pretrained_dir,
@@ -636,12 +636,12 @@ def train_token_multiclass(cfg: TokenClsCfg):
     
     train_out = trainer.train(resume_from_checkpoint=resume_from_checkpoint)
 
-    # 保存
+    # Save
     os.makedirs(cfg.output_dir, exist_ok=True)
     trainer.save_model(cfg.output_dir)
     tokenizer.save_pretrained(cfg.output_dir)
 
-    # 评估
+    # Evaluate
     eval_metrics = trainer.evaluate()
     test_metrics = trainer.evaluate(eval_dataset=ds["test"])
 
@@ -653,7 +653,7 @@ def train_token_multiclass(cfg: TokenClsCfg):
     for k, v in test_metrics.items():
         print(f"{k}: {v:.6f}" if isinstance(v, float) else f"{k}: {v}")
 
-    # 记录配置
+    # Record configuration
     with open(os.path.join(cfg.output_dir, "token_multiclass_config.json"), "w") as f:
         json.dump({
             "num_labels": cfg.num_labels,
@@ -1044,8 +1044,8 @@ def main():
     ap_tok.add_argument("--dropout", type=float, default=0.1)
     ap_tok.add_argument("--loss_type", type=str, default="focal", choices=["cross_entropy", "focal"])
     ap_tok.add_argument("--focal_gamma", type=float, default=2.0)
-    ap_tok.add_argument("--focal_alpha", type=str, default=None, help="JSON 列表（长度=num_labels）")
-    ap_tok.add_argument("--class_counts", type=str, default=None, help="各类计数 JSON")
+    ap_tok.add_argument("--focal_alpha", type=str, default=None, help="JSON list (length=num_labels)")
+    ap_tok.add_argument("--class_counts", type=str, default=None, help="Class counts JSON")
     ap_tok.add_argument("--compute_class_counts", action="store_true")
     ap_tok.add_argument("--batch_size", type=int, default=8)
     ap_tok.add_argument("--lr", type=float, default=3e-5)
@@ -1084,7 +1084,7 @@ def main():
         if args.focal_alpha:
             focal_alpha = json.loads(args.focal_alpha)
             if not isinstance(focal_alpha, list):
-                raise ValueError("--focal_alpha 需要 JSON 列表")
+                raise ValueError("--focal_alpha requires a JSON list")
         class_counts = None
         if args.class_counts:
             cc_raw = json.loads(args.class_counts)
