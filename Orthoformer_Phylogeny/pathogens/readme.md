@@ -16,7 +16,6 @@ This directory contains scripts for building phylogenetic trees of pathogen geno
 pathogens/
 ├── build_pathogen_phylogeny.py      # Main pipeline script
 ├── create_itol_annotations.py        # Generate iTOL annotation files
-├── run_iqtree.sh                     # IQ-TREE execution script
 ├── isolates_multi_829_metadata.csv   # Genome metadata
 ├── pathogens_faa/                    # Protein sequence files (*.faa)
 ├── phylo_tree/                       # Phylogenetic tree outputs
@@ -84,26 +83,7 @@ The script uses GTDB release 226 bac120 markers. Key parameters:
 - **Bootstrap replicates**: 1000
 - **Timeout**: 4 hours for IQ-TREE (falls back to FastTree if exceeded)
 
-### 2. Run IQ-TREE Separately
-
-If you need to run IQ-TREE separately (e.g., after modifying alignment):
-
-```bash
-bash run_iqtree.sh
-```
-
-**Features:**
-- Checks if IQ-TREE is already running (prevents duplicate runs)
-- Runs in background with progress logging
-- Automatically determines optimal thread count
-- Creates PID file for process management
-
-**Monitor progress:**
-```bash
-tail -f phylo_tree/iqtree_run.log
-```
-
-### 3. Create iTOL Annotations
+### 2. Create iTOL Annotations
 
 Generate iTOL annotation files for tree visualization:
 

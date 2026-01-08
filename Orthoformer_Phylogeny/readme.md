@@ -30,7 +30,6 @@ Orthoformer_Phylogeny/
     ├── readme.md                      # Detailed documentation
     ├── build_pathogen_phylogeny.py    # Main pipeline
     ├── create_itol_annotations.py     # iTOL annotations
-    ├── run_iqtree.sh                  # IQ-TREE execution
     └── ...                            # See pathogens/readme.md
 ```
 
@@ -109,9 +108,6 @@ python calculate_rf_metrics.py
 cd pathogens
 # Run full pipeline
 python build_pathogen_phylogeny.py
-
-# Or run IQ-TREE separately
-bash run_iqtree.sh
 
 # Create visualizations
 python create_itol_annotations.py
