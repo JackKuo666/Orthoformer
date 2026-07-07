@@ -22,7 +22,8 @@ Orthoformer/
 ├── Orthoformer_Phylogeny/     # phylogenetic analysis  
 ├── Orthoformer_Phenotype/     # Phenotype prediction downstream task 
 ├── Orthoformer_CRISPR/        # CRISPR-related token-level multiclass classification tasks
-├── Orthoformer_BGC/           # BGC abundance regression downstream task 
+├── Orthoformer_BGC/           # BGC abundance regression downstream task
+├── Tutorial/                  # Biologist Tutorial & MAG Workflow Tutorial
 ├── LICENSE                    # MIT License
 └── README.md                  # This file
 ```
